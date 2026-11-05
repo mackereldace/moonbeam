@@ -145,6 +145,12 @@
 
     <!-- Preferences -->
     <string name="category_basic_settings">Basic Settings</string>
+    <!-- Six-category settings layout (0.4.0). Audio and Input reuse the existing strings. -->
+    <string name="category_picture_settings">Picture</string>
+    <string name="category_latency_settings">Latency</string>
+    <string name="category_network_settings">Network</string>
+    <string name="category_debug_settings">Debug</string>
+    <string name="title_advanced_settings">Advanced</string>
     <string name="title_resolution_list">Video resolution</string>
     <string name="summary_resolution_list">Increase to improve image clarity. Decrease for better performance on lower end devices and slower networks.</string>
     <string name="title_native_res_dialog">Native Resolution Warning</string>

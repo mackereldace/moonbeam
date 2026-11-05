@@ -105,6 +105,12 @@
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
     <string name="category_basic_settings"> 基本设置 </string>
+    <!-- 六分类设置页（0.4.0）。音频/输入沿用已有字符串。 -->
+    <string name="category_picture_settings">画面</string>
+    <string name="category_latency_settings">延迟</string>
+    <string name="category_network_settings">网络</string>
+    <string name="category_debug_settings">调试</string>
+    <string name="title_advanced_settings">高级设置</string>
     <string name="title_resolution_list"> 视频分辨率 </string>
     <string name="summary_resolution_list">高分辨率提升图像清晰度。低分辨率提升在低端设备和较慢网络中的串流体验。</string>
     <string name="title_fps_list"> 视频帧数 </string>

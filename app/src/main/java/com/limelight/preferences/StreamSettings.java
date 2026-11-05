@@ -1,7 +1,14 @@
 package com.limelight.preferences;
 
 import android.content.Context;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.net.Uri;
+import android.preference.Preference;
+import android.widget.Toast;
+import com.limelight.utils.ConfigurationPort;
+import java.io.IOException;
+import java.io.InputStream;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
@@ -16,6 +23,7 @@ import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
+import android.preference.PreferenceGroup;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 import android.util.DisplayMetrics;
@@ -35,7 +43,9 @@ import com.limelight.utils.Dialog;
 import com.limelight.utils.UiHelper;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class StreamSettings extends Activity {
     private PreferenceConfiguration previousPrefs;
@@ -122,6 +132,13 @@ public class StreamSettings extends Activity {
     }
 
     public static class SettingsFragment extends PreferenceFragment {
+        /** Request code for picking a Moonlight V+ backup file. */
+        private static final int REQUEST_IMPORT_VPLUS_BACKUP = 0x5650;
+
+        /** Backup bytes buffered between the file picker and the password prompt. */
+        private byte[] pendingDocument;
+        private static final String RESTORE_BACKUP_KEY = "restore_vplus_backup";
+
         private int nativeResolutionStartIndex = Integer.MAX_VALUE;
         private boolean nativeFramerateShown = false;
 
@@ -667,6 +684,278 @@ public class StreamSettings extends Activity {
                     return true;
                 }
             });
+
+            Preference restoreBackup = findPreference(RESTORE_BACKUP_KEY);
+            if (restoreBackup != null) {
+                restoreBackup.setOnPreferenceClickListener(preference -> {
+                    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.setType("*/*");
+                    try {
+                        startActivityForResult(intent, REQUEST_IMPORT_VPLUS_BACKUP);
+                    } catch (ActivityNotFoundException e) {
+                        Toast.makeText(getActivity(), "No file picker available", Toast.LENGTH_LONG).show();
+                    }
+                    return true;
+                });
+            }
+
+            // Everything that needs the original XML hierarchy is done. Rebuild it now.
+            applyCategoryLayout(getPreferenceScreen());
         }
+
+        /** Keys of the six top-level categories, in display order. */
+        private static final String[] CATEGORY_KEYS = {
+                "cat_picture", "cat_audio", "cat_latency", "cat_input", "cat_network", "cat_debug"
+        };
+
+        /** Titles matching {@link #CATEGORY_KEYS}, index for index. */
+        private static final int[] CATEGORY_TITLES = {
+                R.string.category_picture_settings,
+                R.string.category_audio_settings,
+                R.string.category_latency_settings,
+                R.string.category_input_settings,
+                R.string.category_network_settings,
+                R.string.category_debug_settings,
+        };
+
+        /**
+         * Where each preference belongs in the refactored layout.
+         *
+         * Columns: preference key, category index into {@link #CATEGORY_KEYS}, and a layer
+         * marker - "c" for the layer shown directly in the category, "a" for the advanced
+         * layer that lives behind the category's "Advanced" sub-screen.
+         *
+         * The keys here are the ones stored in SharedPreferences and the ones the V+ backup
+         * importer maps. Do not rename them; add or remove rows instead.
+         */
+        private static final String[][] PREF_LAYOUT = {
+                // Picture
+                {"list_resolution", "0", "c"},
+                {"list_fps", "0", "c"},
+                {"checkbox_stretch_video", "0", "c"},
+                {"checkbox_enable_hdr", "0", "c"},
+                {"video_format", "0", "a"},
+                {"checkbox_full_range", "0", "a"},
+                {"checkbox_enable_sops", "0", "a"},
+
+                // Audio
+                {"list_audio_config", "1", "c"},
+                {"checkbox_host_audio", "1", "c"},
+                {"checkbox_enable_audiofx", "1", "a"},
+
+                // Latency
+                {"frame_pacing", "2", "c"},
+                {"checkbox_reduce_refresh_rate", "2", "c"},
+                {"checkbox_enable_perf_overlay", "2", "c"},
+                {"list_perf_overlay_mode", "2", "c"},
+                {"checkbox_unlock_fps", "2", "a"},
+                {"checkbox_enable_post_stream_toast", "2", "a"},
+
+                // Input
+                {"checkbox_touchscreen_trackpad", "3", "c"},
+                {"checkbox_mouse_nav_buttons", "3", "c"},
+                {"checkbox_show_onscreen_controls", "3", "c"},
+                {"seekbar_deadzone", "3", "a"},
+                {"checkbox_multi_controller", "3", "a"},
+                {"checkbox_usb_driver", "3", "a"},
+                {"checkbox_usb_bind_all", "3", "a"},
+                {"checkbox_mouse_emulation", "3", "a"},
+                {"analog_scrolling", "3", "a"},
+                {"checkbox_vibrate_fallback", "3", "a"},
+                {"seekbar_vibrate_fallback_strength", "3", "a"},
+                {"checkbox_flip_face_buttons", "3", "a"},
+                {"checkbox_gamepad_touchpad_as_mouse", "3", "a"},
+                {"checkbox_gamepad_motion_sensors", "3", "a"},
+                {"checkbox_gamepad_motion_fallback", "3", "a"},
+                {"checkbox_absolute_mouse_mode", "3", "a"},
+                {"checkbox_vibrate_osc", "3", "a"},
+                {"checkbox_only_show_L3R3", "3", "a"},
+                {"checkbox_show_guide_button", "3", "a"},
+                {"seekbar_osc_opacity", "3", "a"},
+
+                // Network
+                {"seekbar_bitrate_kbps", "4", "c"},
+                {"checkbox_adaptive_bitrate", "4", "c"},
+
+                // Debug
+                {"restore_vplus_backup", "5", "c"},
+                {"checkbox_disable_warnings", "5", "c"},
+                {"list_languages", "5", "c"},
+                {"checkbox_enable_pip", "5", "a"},
+                {"checkbox_small_icon_mode", "5", "a"},
+        };
+
+        /**
+         * Rebuild the inflated preference screen as six categories, each with a common layer
+         * and an advanced sub-screen.
+         *
+         * The XML stays the single source of truth for every preference, its key and its
+         * default; this only moves the inflated objects into a new hierarchy. Moving the
+         * objects (rather than rewriting the XML) keeps every listener registered earlier in
+         * {@link #onCreate} attached, and lets the capability checks keep working against the
+         * original category keys.
+         *
+         * Preferences already removed by a capability check simply have no object to move, so
+         * a null lookup is expected rather than an error - but it is logged, because a layout
+         * row that matches nothing is usually a renamed key.
+         */
+        private void applyCategoryLayout(PreferenceScreen screen) {
+            if (screen == null) {
+                return;
+            }
+
+            // Remember the old top-level groups so they can be dropped once they are empty.
+            List<Preference> oldGroups = new ArrayList<>();
+            for (int i = 0; i < screen.getPreferenceCount(); i++) {
+                oldGroups.add(screen.getPreference(i));
+            }
+
+            PreferenceCategory[] categories = new PreferenceCategory[CATEGORY_KEYS.length];
+            PreferenceScreen[] advancedScreens = new PreferenceScreen[CATEGORY_KEYS.length];
+            int[] commonOrder = new int[CATEGORY_KEYS.length];
+            int[] advancedOrder = new int[CATEGORY_KEYS.length];
+
+            for (int i = 0; i < CATEGORY_KEYS.length; i++) {
+                PreferenceCategory category = new PreferenceCategory(screen.getContext());
+                category.setKey(CATEGORY_KEYS[i]);
+                category.setTitle(CATEGORY_TITLES[i]);
+                category.setOrder(i);
+                categories[i] = category;
+            }
+
+            int moved = 0;
+            int missing = 0;
+
+            for (String[] row : PREF_LAYOUT) {
+                Preference preference = findPreference(row[0]);
+                if (preference == null) {
+                    LimeLog.warning("settings layout: key not present, skipped: " + row[0] + " (removed by a capability check?)");
+                    missing++;
+                    continue;
+                }
+
+                int categoryIndex = Integer.parseInt(row[1]);
+                boolean advanced = "a".equals(row[2]);
+
+                PreferenceGroup target;
+                if (advanced) {
+                    if (advancedScreens[categoryIndex] == null) {
+                        // PreferenceScreen has no public (Context, AttributeSet) constructor;
+                        // the manager's factory is the supported way to build one in code.
+                        PreferenceScreen sub = getPreferenceManager().createPreferenceScreen(screen.getContext());
+                        sub.setKey(CATEGORY_KEYS[categoryIndex] + "_advanced");
+                        sub.setTitle(R.string.title_advanced_settings);
+                        advancedScreens[categoryIndex] = sub;
+                    }
+                    target = advancedScreens[categoryIndex];
+                    preference.setOrder(advancedOrder[categoryIndex]++);
+                }
+                else {
+                    target = categories[categoryIndex];
+                    preference.setOrder(commonOrder[categoryIndex]++);
+                }
+
+                PreferenceGroup parent = preference.getParent();
+                if (parent != null) {
+                    parent.removePreference(preference);
+                }
+                target.addPreference(preference);
+                moved++;
+            }
+
+            for (int i = 0; i < CATEGORY_KEYS.length; i++) {
+                if (advancedScreens[i] != null) {
+                    advancedScreens[i].setOrder(commonOrder[i]);
+                    categories[i].addPreference(advancedScreens[i]);
+                }
+                screen.addPreference(categories[i]);
+            }
+
+            // The old groups are empty now; leaving them would show stray headers.
+            for (Preference oldGroup : oldGroups) {
+                screen.removePreference(oldGroup);
+            }
+
+            LimeLog.info("settings layout: " + moved + " preferences in "
+                    + CATEGORY_KEYS.length + " categories, " + missing + " unavailable on this device");
+        }
+
+        /** Prompt for the backup password, then run the import with it. */
+        private void askBackupPassword() {
+            final android.widget.EditText input = new android.widget.EditText(getActivity());
+            input.setHint("Backup password");
+            input.setInputType(android.text.InputType.TYPE_CLASS_TEXT
+                    | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+            new android.app.AlertDialog.Builder(getActivity())
+                    .setTitle("Encrypted backup")
+                    .setMessage("This V+ backup is password protected.")
+                    .setView(input)
+                    .setPositiveButton("Import", (dialog, which) ->
+                            runImport(pendingDocument, input.getText().toString()))
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        }
+
+        /** Import the buffered document and show the per-step report. */
+        private void runImport(byte[] document, String password) {
+            try (InputStream in = new java.io.ByteArrayInputStream(document)) {
+                ConfigurationPort.ImportResult result =
+                        ConfigurationPort.importVPlusBackup(getActivity(), in, password);
+                pendingDocument = null;
+                showImportReport(result.report());
+            } catch (Exception e) {
+                showImportReport("Import failed: " + e.getMessage());
+            }
+        }
+
+        private void showImportReport(String text) {
+            new android.app.AlertDialog.Builder(getActivity())
+                    .setTitle("V+ backup import")
+                    .setMessage(text)
+                    // The computer list is cached by the running service, so the restored PCs
+                    // only show up after the process restarts. Offer that instead of making the
+                    // user discover it (and blame the import).
+                    .setPositiveButton("Restart app", (dialog, which) -> restartApp())
+                    .setNegativeButton("Later", null)
+                    .show();
+        }
+
+        private void restartApp() {
+            Intent intent = getActivity().getPackageManager()
+                    .getLaunchIntentForPackage(getActivity().getPackageName());
+            if (intent != null) {
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                getActivity().startActivity(intent);
+            }
+            android.os.Process.killProcess(android.os.Process.myPid());
+        }
+
+        @Override
+        public void onActivityResult(int requestCode, int resultCode, Intent data) {
+            if (requestCode == REQUEST_IMPORT_VPLUS_BACKUP) {
+                if (resultCode != Activity.RESULT_OK || data == null || data.getData() == null) {
+                    return;
+                }
+                Uri uri = data.getData();
+                try (InputStream in = getActivity().getContentResolver().openInputStream(uri)) {
+                    if (in == null) {
+                        throw new IOException("Cannot open the selected file");
+                    }
+                    final byte[] document = ConfigurationPort.readAll(in);
+                    if (ConfigurationPort.looksEncrypted(document)) {
+                        pendingDocument = document;
+                        askBackupPassword();
+                    } else {
+                        runImport(document, null);
+                    }
+                } catch (Exception e) {
+                    showImportReport("Import failed: " + e.getMessage());
+                }
+                return;
+            }
+            super.onActivityResult(requestCode, resultCode, data);
+        }
+
     }
 }
