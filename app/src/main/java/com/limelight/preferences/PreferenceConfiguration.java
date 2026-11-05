@@ -29,6 +29,7 @@ public class PreferenceConfiguration {
     static final String RESOLUTION_PREF_STRING = "list_resolution";
     static final String FPS_PREF_STRING = "list_fps";
     static final String BITRATE_PREF_STRING = "seekbar_bitrate_kbps";
+    private static final String ADAPTIVE_BITRATE_PREF_STRING = "checkbox_adaptive_bitrate";
     private static final String BITRATE_PREF_OLD_STRING = "seekbar_bitrate";
     private static final String STRETCH_PREF_STRING = "checkbox_stretch_video";
     private static final String SOPS_PREF_STRING = "checkbox_enable_sops";
@@ -49,6 +50,13 @@ public class PreferenceConfiguration {
     private static final String ENABLE_HDR_PREF_STRING = "checkbox_enable_hdr";
     private static final String ENABLE_PIP_PREF_STRING = "checkbox_enable_pip";
     private static final String ENABLE_PERF_OVERLAY_STRING = "checkbox_enable_perf_overlay";
+
+    /** Performance overlay styles. */
+    public static final int PERF_OVERLAY_OFF = 0;
+    public static final int PERF_OVERLAY_NUMBERS = 1;
+    public static final int PERF_OVERLAY_HUD = 2;
+
+    private static final String PERF_OVERLAY_MODE_STRING = "list_perf_overlay_mode";
     private static final String BIND_ALL_USB_STRING = "checkbox_usb_bind_all";
     private static final String MOUSE_EMULATION_STRING = "checkbox_mouse_emulation";
     private static final String ANALOG_SCROLLING_PREF_STRING = "analog_scrolling";
@@ -124,6 +132,8 @@ public class PreferenceConfiguration {
 
     public int width, height, fps;
     public int bitrate;
+    /** Let the client lower the bitrate when the network degrades. */
+    public boolean enableAdaptiveBitrate;
     public FormatOption videoFormat;
     public int deadzonePercentage;
     public int oscOpacity;
@@ -136,6 +146,8 @@ public class PreferenceConfiguration {
     public boolean enableHdr;
     public boolean enablePip;
     public boolean enablePerfOverlay;
+    /** One of PERF_OVERLAY_OFF / PERF_OVERLAY_NUMBERS / PERF_OVERLAY_HUD. */
+    public int perfOverlayMode;
     public boolean enableLatencyToast;
     public boolean bindAllUsb;
     public boolean mouseEmulation;
@@ -584,6 +596,18 @@ public class PreferenceConfiguration {
         config.enableHdr = prefs.getBoolean(ENABLE_HDR_PREF_STRING, DEFAULT_ENABLE_HDR) && !isShieldAtvFirmwareWithBrokenHdr();
         config.enablePip = prefs.getBoolean(ENABLE_PIP_PREF_STRING, DEFAULT_ENABLE_PIP);
         config.enablePerfOverlay = prefs.getBoolean(ENABLE_PERF_OVERLAY_STRING, DEFAULT_ENABLE_PERF_OVERLAY);
+        // The checkbox stays as the master switch for backwards compatibility; the list picks
+        // the style. Default matches the old behaviour (plain numbers).
+        try {
+            config.enableAdaptiveBitrate = prefs.getBoolean(ADAPTIVE_BITRATE_PREF_STRING, true);
+        config.perfOverlayMode = Integer.parseInt(
+                    prefs.getString(PERF_OVERLAY_MODE_STRING, String.valueOf(PERF_OVERLAY_NUMBERS)));
+        } catch (NumberFormatException e) {
+            config.perfOverlayMode = PERF_OVERLAY_NUMBERS;
+        }
+        if (!config.enablePerfOverlay) {
+            config.perfOverlayMode = PERF_OVERLAY_OFF;
+        }
         config.bindAllUsb = prefs.getBoolean(BIND_ALL_USB_STRING, DEFAULT_BIND_ALL_USB);
         config.mouseEmulation = prefs.getBoolean(MOUSE_EMULATION_STRING, DEFAULT_MOUSE_EMULATION);
         config.mouseNavButtons = prefs.getBoolean(MOUSE_NAV_BUTTONS_STRING, DEFAULT_MOUSE_NAV_BUTTONS);

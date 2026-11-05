@@ -22,6 +22,16 @@
         <requestFocus />
     </com.limelight.ui.StreamView>
 
+    <com.limelight.PerfHudView
+        android:id="@+id/perfHud"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="10dp"
+        android:layout_gravity="left"
+        android:visibility="gone" />
+
     <TextView
         android:id="@+id/performanceOverlay"
         android:layout_width="wrap_content"

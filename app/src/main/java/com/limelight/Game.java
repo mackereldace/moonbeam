@@ -16,6 +16,9 @@ import com.limelight.binding.input.virtual_controller.VirtualController;
 import com.limelight.binding.video.CrashListener;
 import com.limelight.binding.video.MediaCodecDecoderRenderer;
 import com.limelight.binding.video.MediaCodecHelper;
+import com.limelight.binding.video.PerfHudData;
+import com.limelight.telemetry.AbrController;
+import com.limelight.telemetry.SessionTelemetry;
 import com.limelight.binding.video.PerfOverlayListener;
 import com.limelight.nvstream.NvConnection;
 import com.limelight.nvstream.NvConnectionListener;
@@ -57,6 +60,7 @@ import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
 import android.os.Build;
+import android.os.Looper;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -92,6 +96,13 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         OnGenericMotionListener, OnTouchListener, NvConnectionListener, EvdevListener,
         OnSystemUiVisibilityChangeListener, GameGestures, StreamView.InputCallbacks,
         PerfOverlayListener, UsbDriverService.UsbDriverStateListener, View.OnKeyListener {
+
+    /** Refresh rates at or above this are pinned to an exact display mode instead of hinted. */
+    private static final float HIGH_REFRESH_PIN_THRESHOLD_HZ = 100f;
+
+    /** Best display mode chosen for this session; used to pin the mode after selection. */
+    private Display.Mode desiredDisplayMode;
+
     private int lastButtonState = 0;
 
     // Only 2 touches are supported
@@ -146,6 +157,12 @@ public class Game extends Activity implements SurfaceHolder.Callback,
     private TextView notificationOverlayView;
     private int requestedNotificationOverlayVisibility = View.GONE;
     private TextView performanceOverlayView;
+    private PerfHudView perfHudView;
+    private int perfOverlayMode = PreferenceConfiguration.PERF_OVERLAY_OFF;
+    /** Adaptive bitrate controller for this session, or null when disabled. */
+    private AbrController abrController;
+    /** True when this session negotiated HDR with the host; shown in the HUD header. */
+    private boolean streamHdrActive;
 
     private MediaCodecDecoderRenderer decoderRenderer;
     private boolean reportedCrash;
@@ -271,6 +288,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         notificationOverlayView = findViewById(R.id.notificationOverlay);
 
         performanceOverlayView = findViewById(R.id.performanceOverlay);
+        perfHudView = findViewById(R.id.perfHud);
 
         inputCaptureProvider = InputCaptureManager.getInputCaptureProvider(this, this);
 
@@ -368,8 +386,19 @@ public class Game extends Activity implements SurfaceHolder.Callback,
             }
         }
 
+        streamHdrActive = willStreamHdr;
+        SessionTelemetry.get().start(host, pcName);
+        SessionTelemetry.get().putMeta("resolution", prefConfig.width + "x" + prefConfig.height);
+        SessionTelemetry.get().putMeta("fps_target", prefConfig.fps);
+        SessionTelemetry.get().putMeta("bitrate_kbps", prefConfig.bitrate);
+        SessionTelemetry.get().putMeta("hdr", streamHdrActive);
+
         // Check if the user has enabled performance stats overlay
-        if (prefConfig.enablePerfOverlay) {
+        perfOverlayMode = prefConfig.perfOverlayMode;
+        if (perfOverlayMode == PreferenceConfiguration.PERF_OVERLAY_HUD) {
+            perfHudView.setVisibility(View.VISIBLE);
+        }
+        else if (perfOverlayMode == PreferenceConfiguration.PERF_OVERLAY_NUMBERS) {
             performanceOverlayView.setVisibility(View.VISIBLE);
         }
 
@@ -486,6 +515,13 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                 new ComputerDetails.AddressTuple(host, port),
                 httpsPort, uniqueId, config,
                 PlatformBinding.getCryptoProvider(this), serverCert);
+        // Adaptive bitrate needs the connection, so it is created here rather than with the
+        // other session objects: referencing conn before this line was a null dereference.
+        if (prefConfig.enableAdaptiveBitrate) {
+            abrController = new AbrController(conn::setRuntimeBitrate, prefConfig.bitrate);
+            abrController.setEnabled(true);
+        }
+
         controllerHandler = new ControllerHandler(this, conn, this, prefConfig);
         keyboardTranslator = new KeyboardTranslator();
 
@@ -875,6 +911,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                 }
 
                 bestMode = candidate;
+                desiredDisplayMode = candidate;
                 refreshRateIsGood = isRefreshRateGoodMatch(candidate.getRefreshRate());
                 refreshRateIsEqual = isRefreshRateEqualMatch(candidate.getRefreshRate());
             }
@@ -925,6 +962,19 @@ public class Game extends Activity implements SurfaceHolder.Callback,
             LimeLog.info("Selected refresh rate: "+bestRefreshRate);
             windowLayoutParams.preferredRefreshRate = bestRefreshRate;
             displayRefreshRate = bestRefreshRate;
+
+            // A refresh-rate hint is advisory: the vendor power policy can drop the panel back
+            // to 60 Hz while the session is running. Measured on a 120 Hz panel requesting
+            // 120 fps with every "reduce refresh rate" option off: 46 of 81 samples ran at
+            // 60 Hz, which halves the presented frame rate and produces exactly the tail
+            // latencies users report as stutter. Pin the mode instead of hinting it.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+                    && desiredDisplayMode != null
+                    && desiredDisplayMode.getRefreshRate() >= HIGH_REFRESH_PIN_THRESHOLD_HZ) {
+                windowLayoutParams.preferredDisplayModeId = desiredDisplayMode.getModeId();
+                LimeLog.info("Pinned display mode id "+desiredDisplayMode.getModeId()+
+                        " @"+desiredDisplayMode.getRefreshRate()+"Hz");
+            }
 
             // Apply the refresh rate change
             getWindow().setAttributes(windowLayoutParams);
@@ -2226,6 +2276,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
     }
 
     private void stopConnection() {
+        SessionTelemetry.get().finish(this);
         if (connecting || connected) {
             connecting = connected = false;
             updatePipAutoEnter();
@@ -2515,6 +2566,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
             UiHelper.notifyStreamConnecting(Game.this);
 
             decoderRenderer.setRenderTarget(holder);
+            applySurfaceFrameRate();
             conn.start(new AndroidAudioRenderer(Game.this, prefConfig.enableAudioFx),
                     decoderRenderer, Game.this);
         }
@@ -2662,12 +2714,94 @@ public class Game extends Activity implements SurfaceHolder.Callback,
 
     @Override
     public void onPerfUpdate(final String text) {
+        if (perfOverlayMode != PreferenceConfiguration.PERF_OVERLAY_NUMBERS) {
+            return;
+        }
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 performanceOverlayView.setText(text);
             }
         });
+    }
+
+    @Override
+    public void onPerfHud(final PerfHudData data) {
+        data.displayRefreshHz = Math.round(getWindowManager().getDefaultDisplay().getRefreshRate());
+        SessionTelemetry.get().record(data);
+        if (abrController != null) {
+            abrController.onSample(data);
+        }
+        if (perfOverlayMode != PreferenceConfiguration.PERF_OVERLAY_HUD) {
+            return;
+        }
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                updatePerfHud(data);
+            }
+        });
+    }
+
+    /**
+     * Tell the platform what this surface is going to do.
+     *
+     * setFrameRate() with FIXED_SOURCE is the documented way for a continuously drawing
+     * surface to state its rate; the platform then keeps the panel at a matching mode.
+     * This is the mechanism games use, and unlike polling it is a declaration rather than a
+     * correction loop. Called on lifecycle events only (surface created/changed, resume).
+     */
+    private void applySurfaceFrameRate() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || streamView == null) {
+            return;
+        }
+        android.view.Surface surface = streamView.getHolder().getSurface();
+        if (surface == null || !surface.isValid()) {
+            return;
+        }
+        try {
+            surface.setFrameRate(prefConfig.fps,
+                    android.view.Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE,
+                    android.view.Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS);
+            LimeLog.info("Declared surface frame rate " + prefConfig.fps + "fps");
+        } catch (IllegalArgumentException e) {
+            LimeLog.warning("setFrameRate rejected: " + e.getMessage());
+        }
+    }
+
+    /** Translate the renderer's numbers into HUD rows. */
+    private void updatePerfHud(PerfHudData data) {
+        if (perfHudView == null) {
+            return;
+        }
+
+        java.util.List<PerfHudView.Row> rows = new java.util.ArrayList<>();
+        rows.add(new PerfHudView.Row("FPS",
+                String.format(java.util.Locale.US, "%.1f", data.renderedFps),
+                null, 0f, false, 0));
+        rows.add(new PerfHudView.Row("FT",
+                String.format(java.util.Locale.US, "%.2f ms", data.frameTimeMedianMs),
+                data.frameTimeSeries, 1000f / Math.max(1f, data.renderedFps) * 1.3f, true, 0));
+        rows.add(new PerfHudView.Row("1%LOW",
+                String.format(java.util.Locale.US, "%.0f", data.onePercentLowFps),
+                null, 0f, false, 0));
+        if (data.networkLatencyMs >= 0) {
+            rows.add(new PerfHudView.Row("NET",
+                    data.networkLatencyMs + " ms", data.networkSeries, 20f, true, 0));
+        }
+        if (data.packetLossPercent >= 0) {
+            rows.add(new PerfHudView.Row("LOST",
+                    String.format(java.util.Locale.US, "%.1f%%", data.packetLossPercent),
+                    null, 0f, false, 0));
+        }
+        rows.add(new PerfHudView.Row("DEC",
+                String.format(java.util.Locale.US, "%.2f ms", data.decodeTimeMs),
+                null, 0f, false, 0));
+
+        Display display = getWindowManager().getDefaultDisplay();
+        String header = (streamHdrActive ? "HDR10 · " : "") + data.streamSummary
+                + " · " + Math.round(display.getRefreshRate()) + "Hz";
+        perfHudView.setData(header, rows.toArray(new PerfHudView.Row[0]));
     }
 
     @Override

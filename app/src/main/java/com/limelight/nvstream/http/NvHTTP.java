@@ -451,6 +451,30 @@ public class NvHTTP {
         }
     }
 
+    /**
+     * Ask the host to change the encoder bitrate mid-session.
+     *
+     * Uses the already-negotiated HTTPS port and the shared client, so the request rides an
+     * existing connection: under congestion a fresh TLS handshake is exactly what must be
+     * avoided. Sunshine records the request and applies it on the encode loop.
+     *
+     * @param bitrateKbps target bitrate in kbps.
+     * @return true when the host accepted the request.
+     */
+    public boolean setRuntimeBitrate(int bitrateKbps) {
+        if (bitrateKbps <= 0) {
+            return false;
+        }
+        try {
+            String response = openHttpConnectionToString(httpClientShortConnectTimeout,
+                    getHttpsUrl(true), "bitrate", "bitrate=" + bitrateKbps);
+            return response != null && response.contains("ok");
+        } catch (IOException e) {
+            LimeLog.warning("Bitrate change to " + bitrateKbps + "kbps failed: " + e.getMessage());
+            return false;
+        }
+    }
+
     private String openHttpConnectionToString(OkHttpClient client, HttpUrl baseUrl, String path) throws IOException {
         return openHttpConnectionToString(client, baseUrl, path, null);
     }

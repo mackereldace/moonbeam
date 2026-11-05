@@ -76,6 +76,12 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
     private boolean foreground = true;
     private PerfOverlayListener perfListener;
 
+    /** Real frame intervals measured on the render thread; source of every HUD number. */
+    private final FrameIntervalTracker frameTracker = new FrameIntervalTracker();
+    /** Rolling network RTT samples for the HUD chart. */
+    private final java.util.ArrayDeque<Float> networkHistory = new java.util.ArrayDeque<>();
+    private static final int NETWORK_HISTORY_POINTS = 120;
+
     private static final int CR_MAX_TRIES = 10;
     private static final int CR_RECOVERY_TYPE_NONE = 0;
     private static final int CR_RECOVERY_TYPE_FLUSH = 1;
@@ -970,6 +976,7 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
 
                     lastRenderedFrameTimeNanos = frameTimeNanos;
                     activeWindowVideoStats.totalFramesRendered++;
+                    frameTracker.recordFrame();
                 } catch (IllegalStateException ignored) {
                     try {
                         // Try to avoid leaking the output buffer by releasing it without rendering
@@ -1052,6 +1059,7 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
                                 }
 
                                 activeWindowVideoStats.totalFramesRendered++;
+                                frameTracker.recordFrame();
                             }
                             else {
                                 // For balanced frame pacing case, the Choreographer callback will handle rendering.
@@ -1408,6 +1416,7 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
                 }
                 sb.append(context.getString(R.string.perf_overlay_dectime, decodeTimeMs));
                 perfListener.onPerfUpdate(sb.toString());
+                perfListener.onPerfHud(buildHudData(sb, fps, lastTwo, decodeTimeMs, rttInfo, initialWidth, initialHeight, decoder));
             }
 
             globalVideoStats.add(activeWindowVideoStats);
@@ -1921,4 +1930,50 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
             return str;
         }
     }
+    /** Assemble one HUD frame from the freshly measured window. */
+    private PerfHudData buildHudData(StringBuilder text, VideoStatsFps fps, VideoStats lastTwo,
+                                     float decodeTimeMs, long rttInfo, int width, int height,
+                                     String decoder) {
+        PerfHudData data = new PerfHudData();
+        data.streamSummary = width + "x" + height + " @" + fps.totalFps;
+        data.decoderName = decoder;
+        data.renderedFps = fps.renderedFps;
+        data.receivedFps = fps.receivedFps;
+        data.decodeTimeMs = decodeTimeMs;
+
+        FrameIntervalTracker.Snapshot snap = frameTracker.snapshot();
+        if (snap != null) {
+            data.frameTimeMedianMs = snap.medianMs;
+            data.frameTimeP99Ms = snap.p99Ms;
+            data.onePercentLowFps = snap.onePercentLowFps;
+            data.fivePercentLowFps = snap.fivePercentLowFps;
+            float targetMs = fps.totalFps > 0 ? 1000f / fps.totalFps : 8.33f;
+            data.timeBelowTargetFraction = frameTracker.timeBelowFraction(targetMs * 1.35f);
+        }
+        data.frameTimeSeries = frameTracker.recentSeries(120);
+
+        data.networkLatencyMs = (int)(rttInfo >> 32);
+        data.hostLatencyMs = (int)rttInfo;
+        if (lastTwo.totalFrames > 0) {
+            data.packetLossPercent = (float) lastTwo.framesLost / lastTwo.totalFrames * 100f;
+        }
+
+        synchronized (networkHistory) {
+            if (data.networkLatencyMs >= 0) {
+                if (networkHistory.size() >= NETWORK_HISTORY_POINTS) {
+                    networkHistory.removeFirst();
+                }
+                networkHistory.addLast((float) data.networkLatencyMs);
+            }
+            float[] series = new float[networkHistory.size()];
+            int i = 0;
+            for (Float v : networkHistory) {
+                series[i++] = v;
+            }
+            data.networkSeries = series;
+        }
+
+        return data;
+    }
+
 }

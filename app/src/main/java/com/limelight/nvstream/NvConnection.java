@@ -219,9 +219,26 @@ public class NvConnection {
         return StreamConfiguration.STREAM_CFG_AUTO;
     }
     
+    /** Kept for the session so adaptive-bitrate changes reuse one connection. */
+    private NvHTTP abrHttp;
+
+    /**
+     * Change the host encoder bitrate mid-session.
+     *
+     * @param kbps target bitrate.
+     * @return true when the host accepted it.
+     */
+    public boolean setRuntimeBitrate(int kbps) {
+        if (abrHttp == null) {
+            return false;
+        }
+        return abrHttp.setRuntimeBitrate(kbps);
+    }
+
     private boolean startApp() throws XmlPullParserException, IOException
     {
         NvHTTP h = new NvHTTP(context.serverAddress, context.httpsPort, uniqueId, context.serverCert, cryptoProvider);
+        abrHttp = h;
 
         String serverInfo = h.getServerInfo(true);
         

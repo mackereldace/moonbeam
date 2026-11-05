@@ -137,4 +137,14 @@
         <item>right</item>
         <item>left</item>
     </string-array>
+    <string-array name="perf_overlay_mode_entries">
+        <item>Off</item>
+        <item>Numbers</item>
+        <item>HUD (charts)</item>
+    </string-array>
+    <string-array name="perf_overlay_mode_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
 </resources>
