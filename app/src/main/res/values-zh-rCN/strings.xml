@@ -104,6 +104,49 @@
     <string name="addpc_enter_ip">请输入一个IP地址</string>
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
+
+    <string name="title_restore_vplus_backup">恢复 V+ 备份</string>
+    <string name="summary_restore_vplus_backup">从 Moonlight V+ 备份文件导入设置与已配对电脑</string>
+    <string name="title_adaptive_bitrate">自适应码率</string>
+    <string name="summary_adaptive_bitrate">网络变差时自动降码率、好转后缓慢恢复。需要主机端 Sunshine 支持码率调整接口。</string>
+    <string name="title_perf_overlay_mode">性能面板样式</string>
+    <string name="summary_perf_overlay_mode">数字：纯文本读数。HUD：帧时间、延迟与丢包曲线。</string>
+    <string name="title_show_guide_button">显示 Home 键</string>
+    <string name="summary_show_guide_button">在屏幕控件上显示一个 Home 按钮</string>
+    <string name="hdr_shield_update">请先更新 NVIDIA SHIELD Android TV 的固件再启用 HDR</string>
+
+    <!-- HDR 亮度报告 -->
+    <string name="hdr_report_peak">峰值 %1$s nit</string>
+    <string name="hdr_report_black">黑位 %1$s nit</string>
+    <string name="hdr_detail_full_frame">全屏 %1$s nit</string>
+    <string name="hdr_report_estimated">%1$s（估算）</string>
+    <string name="hdr_report_unavailable">这块屏没有给出可用的 HDR 亮度</string>
+    <string name="hdr_detail_title">HDR 亮度报告</string>
+    <string name="hdr_detail_screen">HDR 屏幕：%1$s</string>
+    <string name="hdr_detail_wide_gamut">广色域：%1$s</string>
+    <string name="hdr_detail_formats">HDR 格式：%1$s</string>
+    <string name="hdr_detail_edid_peak">EDID 峰值：%1$s</string>
+    <string name="hdr_detail_edid_peak_none">EDID 峰值：未上报</string>
+    <string name="hdr_detail_ratio">HDR/SDR 比值：当前 %1$s，最高 %2$s</string>
+    <string name="hdr_detail_ratio_unavailable">HDR/SDR 比值：不可用</string>
+    <string name="hdr_detail_report">发往主机：%1$s</string>
+    <string name="hdr_detail_report_none">发往主机：无（这块屏没给出自洽的一组数）</string>
+    <string name="hdr_detail_estimated_note">峰值由 HDR/SDR 比值 × 300 nit（假定的 SDR 白）估算</string>
+    <string name="hdr_detail_implied_hint">提示：峰值 ÷ 比值 反推出 %1$s nit 的 SDR 白，低得不合常理，驱动可能少报了峰值</string>
+    <string name="common_yes">是</string>
+    <string name="common_no">否</string>
+
+    <!-- V+ 备份导入 -->
+    <string name="vplus_password_title">加密备份</string>
+    <string name="vplus_password_message">这份 V+ 备份有密码保护。</string>
+    <string name="vplus_password_hint">备份密码</string>
+    <string name="button_import">导入</string>
+    <string name="button_restart_app">重启应用</string>
+    <string name="button_later">以后</string>
+    <string name="vplus_import_title">V+ 备份导入</string>
+    <string name="vplus_import_failed">导入失败：%1$s</string>
+    <string name="vplus_cannot_open">读不到所选文件</string>
+    <string name="toast_no_file_picker">没有可用的文件选择器</string>
     <string name="title_hdr_brightness_report">HDR 亮度报告</string>
     <string name="summary_hdr_brightness_report">这块屏的 HDR 能力以及会向主机上报的亮度</string>
     <string name="title_hdr_brightness_override">手动校准 HDR 峰值</string>
@@ -296,4 +339,5 @@
     <string name="summary_analog_scrolling">在鼠标模式下选择用哪个摇杆控制鼠标移动</string>
     <string name="summary_seekbar_vibrate_fallback_strength">增强或减弱设备的震动强度</string>
     <string name="analogscroll_none">默认 (两个摇杆都控制鼠标)</string>
+    <string name="local_network_rationale">Moonbeam 需要本地网络权限才能与附近的电脑通信</string>
 </resources>

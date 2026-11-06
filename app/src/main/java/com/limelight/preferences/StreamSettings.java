@@ -620,7 +620,7 @@ public class StreamSettings extends Activity {
                     CheckBoxPreference hdrPref = (CheckBoxPreference) category.findPreference("checkbox_enable_hdr");
                     hdrPref.setEnabled(false);
                     hdrPref.setChecked(false);
-                    hdrPref.setSummary("Update the firmware on your NVIDIA SHIELD Android TV to enable HDR");
+                    hdrPref.setSummary(R.string.hdr_shield_update);
                 }
             }
 
@@ -631,16 +631,16 @@ public class StreamSettings extends Activity {
             if (hdrReport != null) {
                 final com.limelight.utils.HdrDisplayCapabilities capabilities =
                         com.limelight.utils.HdrDisplayCapabilities.probe(getActivity());
-                hdrReport.setSummary(capabilities.summary());
+                hdrReport.setSummary(capabilities.summary(getActivity()));
                 hdrReport.setOnPreferenceClickListener(preference -> {
                     new android.app.AlertDialog.Builder(getActivity())
-                            .setTitle(R.string.title_hdr_brightness_report)
-                            .setMessage(capabilities.detail())
+                            .setTitle(R.string.hdr_detail_title)
+                            .setMessage(capabilities.detail(getActivity()))
                             .setPositiveButton(android.R.string.ok, null)
                             .show();
                     return true;
                 });
-                LimeLog.info("HDR display: " + capabilities.summary());
+                LimeLog.info("HDR display: " + capabilities.summary(getActivity()).replace('\n', ' '));
             }
 
             // Add a listener to the FPS and resolution preference
@@ -709,7 +709,7 @@ public class StreamSettings extends Activity {
                     try {
                         startActivityForResult(intent, REQUEST_IMPORT_VPLUS_BACKUP);
                     } catch (ActivityNotFoundException e) {
-                        Toast.makeText(getActivity(), "No file picker available", Toast.LENGTH_LONG).show();
+                        Toast.makeText(getActivity(), R.string.toast_no_file_picker, Toast.LENGTH_LONG).show();
                     }
                     return true;
                 });
@@ -916,16 +916,16 @@ public class StreamSettings extends Activity {
         /** Prompt for the backup password, then run the import with it. */
         private void askBackupPassword() {
             final android.widget.EditText input = new android.widget.EditText(getActivity());
-            input.setHint("Backup password");
+            input.setHint(R.string.vplus_password_hint);
             input.setInputType(android.text.InputType.TYPE_CLASS_TEXT
                     | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
             new android.app.AlertDialog.Builder(getActivity())
-                    .setTitle("Encrypted backup")
-                    .setMessage("This V+ backup is password protected.")
+                    .setTitle(R.string.vplus_password_title)
+                    .setMessage(R.string.vplus_password_message)
                     .setView(input)
-                    .setPositiveButton("Import", (dialog, which) ->
+                    .setPositiveButton(R.string.button_import, (dialog, which) ->
                             runImport(pendingDocument, input.getText().toString()))
-                    .setNegativeButton("Cancel", null)
+                    .setNegativeButton(android.R.string.cancel, null)
                     .show();
         }
 
@@ -937,19 +937,19 @@ public class StreamSettings extends Activity {
                 pendingDocument = null;
                 showImportReport(result.report());
             } catch (Exception e) {
-                showImportReport("Import failed: " + e.getMessage());
+                showImportReport(getString(R.string.vplus_import_failed, String.valueOf(e.getMessage())));
             }
         }
 
         private void showImportReport(String text) {
             new android.app.AlertDialog.Builder(getActivity())
-                    .setTitle("V+ backup import")
+                    .setTitle(R.string.vplus_import_title)
                     .setMessage(text)
                     // The computer list is cached by the running service, so the restored PCs
                     // only show up after the process restarts. Offer that instead of making the
                     // user discover it (and blame the import).
-                    .setPositiveButton("Restart app", (dialog, which) -> restartApp())
-                    .setNegativeButton("Later", null)
+                    .setPositiveButton(R.string.button_restart_app, (dialog, which) -> restartApp())
+                    .setNegativeButton(R.string.button_later, null)
                     .show();
         }
 
@@ -972,7 +972,7 @@ public class StreamSettings extends Activity {
                 Uri uri = data.getData();
                 try (InputStream in = getActivity().getContentResolver().openInputStream(uri)) {
                     if (in == null) {
-                        throw new IOException("Cannot open the selected file");
+                        throw new IOException(getString(R.string.vplus_cannot_open));
                     }
                     final byte[] document = ConfigurationPort.readAll(in);
                     if (ConfigurationPort.looksEncrypted(document)) {
@@ -982,7 +982,7 @@ public class StreamSettings extends Activity {
                         runImport(document, null);
                     }
                 } catch (Exception e) {
-                    showImportReport("Import failed: " + e.getMessage());
+                    showImportReport(getString(R.string.vplus_import_failed, String.valueOf(e.getMessage())));
                 }
                 return;
             }

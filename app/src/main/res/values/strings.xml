@@ -144,6 +144,47 @@
     <string name="addpc_wrong_sitelocal">That address doesn\'t look right. You must use your router\'s public IP address for streaming over the Internet.</string>
 
     <!-- Preferences -->
+
+    <string name="title_restore_vplus_backup">Restore V+ backup</string>
+    <string name="summary_restore_vplus_backup">Import settings and paired PCs from a Moonlight V+ backup file</string>
+    <string name="title_adaptive_bitrate">Adaptive bitrate</string>
+    <string name="summary_adaptive_bitrate">Lower the bitrate automatically when the network degrades, then recover slowly. Requires a Sunshine host with bitrate support.</string>
+    <string name="title_perf_overlay_mode">Performance overlay style</string>
+    <string name="summary_perf_overlay_mode">Numbers: plain readout. HUD: charts for frame time, latency and loss.</string>
+    <string name="hdr_shield_update">Update the firmware on your NVIDIA SHIELD Android TV to enable HDR</string>
+
+    <!-- HDR brightness report -->
+    <string name="hdr_report_peak">Peak %1$s nit</string>
+    <string name="hdr_report_black">Black %1$s nit</string>
+    <string name="hdr_detail_full_frame">Full-frame %1$s nit</string>
+    <string name="hdr_report_estimated">%1$s (estimated)</string>
+    <string name="hdr_report_unavailable">This display reports no usable HDR brightness</string>
+    <string name="hdr_detail_title">HDR brightness report</string>
+    <string name="hdr_detail_screen">HDR screen: %1$s</string>
+    <string name="hdr_detail_wide_gamut">Wide colour gamut: %1$s</string>
+    <string name="hdr_detail_formats">HDR formats: %1$s</string>
+    <string name="hdr_detail_edid_peak">EDID peak: %1$s</string>
+    <string name="hdr_detail_edid_peak_none">EDID peak: not reported</string>
+    <string name="hdr_detail_ratio">HDR/SDR ratio: now %1$s, highest %2$s</string>
+    <string name="hdr_detail_ratio_unavailable">HDR/SDR ratio: unavailable</string>
+    <string name="hdr_detail_report">Sent to host: %1$s</string>
+    <string name="hdr_detail_report_none">Sent to host: nothing (the display gave no consistent set)</string>
+    <string name="hdr_detail_estimated_note">Peak estimated from the HDR/SDR ratio times 300 nit of assumed SDR white</string>
+    <string name="hdr_detail_implied_hint">Hint: peak divided by ratio implies %1$s nit of SDR white, which is implausibly low - the driver may under-report the peak</string>
+    <string name="common_yes">yes</string>
+    <string name="common_no">no</string>
+
+    <!-- V+ backup import -->
+    <string name="vplus_password_title">Encrypted backup</string>
+    <string name="vplus_password_message">This V+ backup is password protected.</string>
+    <string name="vplus_password_hint">Backup password</string>
+    <string name="button_import">Import</string>
+    <string name="button_restart_app">Restart app</string>
+    <string name="button_later">Later</string>
+    <string name="vplus_import_title">V+ backup import</string>
+    <string name="vplus_import_failed">Import failed: %1$s</string>
+    <string name="vplus_cannot_open">Cannot read the selected file</string>
+    <string name="toast_no_file_picker">No file picker available</string>
     <string name="title_hdr_brightness_report">HDR brightness report</string>
     <string name="summary_hdr_brightness_report">What this display tells the host about its HDR range</string>
     <string name="title_hdr_brightness_override">Manual HDR peak</string>

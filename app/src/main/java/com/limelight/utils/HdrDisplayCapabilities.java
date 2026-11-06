@@ -6,6 +6,7 @@ import android.os.Build;
 import android.view.Display;
 
 import com.limelight.LimeLog;
+import com.limelight.R;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -168,51 +169,63 @@ public final class HdrDisplayCapabilities {
         return joined.toString();
     }
 
-    /** One line for the settings row. */
-    public String summary() {
+    /** Settings row summary: one value per line, because three numbers on one line is unreadable. */
+    public String summary(Context context) {
         if (brightness == null) {
-            return "No usable brightness report on this display";
+            return context.getString(R.string.hdr_report_unavailable);
         }
-        return String.format(Locale.US, "Peak %.0f nit · black %.2f nit · %s%s",
-                brightness.maxNits, brightness.minNits, getTypeSummary(),
-                brightness.estimatedFromRatio ? " (estimated)" : "");
+        String peak = context.getString(R.string.hdr_report_peak, oneDecimal(brightness.maxNits, 0));
+        if (brightness.estimatedFromRatio) {
+            peak = context.getString(R.string.hdr_report_estimated, peak);
+        }
+        String black = context.getString(R.string.hdr_report_black, oneDecimal(brightness.minNits, 2));
+        return peak + "\n" + black + "\n" + getTypeSummary();
     }
 
     /** Multi-line detail for the dialog behind the row. */
-    public String detail() {
+    public String detail(Context context) {
         StringBuilder sb = new StringBuilder();
-        sb.append("HDR screen: ").append(screenHdr ? "yes" : "no").append('\n');
-        sb.append("Wide colour gamut: ").append(wideColorGamut ? "yes" : "no").append('\n');
-        sb.append("HDR formats: ").append(getTypeSummary()).append('\n');
-        sb.append("EDID peak: ")
-                .append(edidPeakNits == null ? "not reported" : String.format(Locale.US, "%.0f nit", edidPeakNits))
-                .append('\n');
-        if (ratioAvailable) {
-            sb.append(String.format(Locale.US, "HDR/SDR ratio: now %.2f, highest %.2f%n", hdrSdrRatio, highestHdrSdrRatio));
-        }
-        else {
-            sb.append("HDR/SDR ratio: unavailable\n");
-        }
+        sb.append(context.getString(R.string.hdr_detail_screen,
+                context.getString(screenHdr ? R.string.common_yes : R.string.common_no))).append('\n');
+        sb.append(context.getString(R.string.hdr_detail_wide_gamut,
+                context.getString(wideColorGamut ? R.string.common_yes : R.string.common_no))).append('\n');
+        sb.append(context.getString(R.string.hdr_detail_formats, getTypeSummary())).append('\n');
+        sb.append(edidPeakNits == null
+                ? context.getString(R.string.hdr_detail_edid_peak_none)
+                : context.getString(R.string.hdr_detail_edid_peak, oneDecimal(edidPeakNits, 0))).append('\n');
+        sb.append(ratioAvailable
+                ? context.getString(R.string.hdr_detail_ratio,
+                        oneDecimal(hdrSdrRatio, 2), oneDecimal(highestHdrSdrRatio, 2))
+                : context.getString(R.string.hdr_detail_ratio_unavailable)).append('\n');
 
         sb.append('\n');
         if (brightness == null) {
-            sb.append("Report to host: none (the display did not give a consistent set)\n");
+            sb.append(context.getString(R.string.hdr_detail_report_none));
         }
         else {
-            sb.append("Report to host: ").append(brightness.describe()).append('\n');
+            String triple = context.getString(R.string.hdr_report_peak, oneDecimal(brightness.maxNits, 0))
+                    + " \u00b7 "
+                    + context.getString(R.string.hdr_report_black, oneDecimal(brightness.minNits, 2))
+                    + " \u00b7 "
+                    + context.getString(R.string.hdr_detail_full_frame, oneDecimal(brightness.maxFullFrameNits, 0));
+            sb.append(context.getString(R.string.hdr_detail_report, triple));
             if (brightness.estimatedFromRatio) {
-                sb.append("Peak estimated from the HDR/SDR ratio times 300 nit of assumed SDR white\n");
+                sb.append('\n').append(context.getString(R.string.hdr_detail_estimated_note));
             }
         }
+
         if (edidPeakNits != null && ratioAvailable && highestHdrSdrRatio > 1f) {
             float impliedSdrWhite = edidPeakNits / highestHdrSdrRatio;
             if (impliedSdrWhite < 100f) {
-                sb.append(String.format(Locale.US,
-                        "Hint: peak divided by ratio implies %.0f nit of SDR white, which is implausibly"
-                                + " low - the driver may be under-reporting the peak\n", impliedSdrWhite));
+                sb.append('\n').append(context.getString(R.string.hdr_detail_implied_hint,
+                        oneDecimal(impliedSdrWhite, 0)));
             }
         }
         return sb.toString();
+    }
+
+    private static String oneDecimal(float value, int decimals) {
+        return String.format(Locale.US, decimals == 0 ? "%.0f" : "%.2f", value);
     }
 
     private static Display getDefaultDisplay(Context context) {

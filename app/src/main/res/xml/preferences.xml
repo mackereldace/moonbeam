@@ -228,8 +228,8 @@
         android:key="category_advanced_settings">
         <Preference
             android:key="restore_vplus_backup"
-            android:title="Restore V+ backup"
-            android:summary="Import settings and paired PCs from a Moonlight V+ backup file" />
+            android:title="@string/title_restore_vplus_backup"
+            android:summary="@string/summary_restore_vplus_backup" />
         <CheckBoxPreference
             android:key="checkbox_unlock_fps"
             android:title="@string/title_unlock_fps"
@@ -287,13 +287,13 @@
             android:defaultValue="false" />
         <CheckBoxPreference
             android:key="checkbox_adaptive_bitrate"
-            android:title="Adaptive bitrate"
-            android:summary="Lower the bitrate automatically when the network degrades, then recover slowly. Requires a Sunshine host with bitrate support."
+            android:title="@string/title_adaptive_bitrate"
+            android:summary="@string/summary_adaptive_bitrate"
             android:defaultValue="true" />
         <ListPreference
             android:key="list_perf_overlay_mode"
-            android:title="Performance overlay style"
-            android:summary="Numbers: plain readout. HUD: charts for frame time, latency and loss."
+            android:title="@string/title_perf_overlay_mode"
+            android:summary="@string/summary_perf_overlay_mode"
             android:entries="@array/perf_overlay_mode_entries"
             android:entryValues="@array/perf_overlay_mode_values"
             android:defaultValue="1" />
