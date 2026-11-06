@@ -110,7 +110,6 @@
     <string name="category_latency_settings">延迟</string>
     <string name="category_network_settings">网络</string>
     <string name="category_debug_settings">调试</string>
-    <string name="title_advanced_settings">高级设置</string>
     <string name="title_resolution_list"> 视频分辨率 </string>
     <string name="summary_resolution_list">高分辨率提升图像清晰度。低分辨率提升在低端设备和较慢网络中的串流体验。</string>
     <string name="title_fps_list"> 视频帧数 </string>

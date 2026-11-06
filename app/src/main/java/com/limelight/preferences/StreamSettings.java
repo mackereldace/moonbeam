@@ -727,89 +727,89 @@ public class StreamSettings extends Activity {
                 R.string.category_debug_settings,
         };
 
-        /** Sort key that keeps a category's advanced sub-screen below its common entries. */
-        private static final int ADVANCED_SCREEN_ORDER = 1000;
-
         /**
          * Where each preference belongs in the refactored layout.
          *
-         * Columns: preference key, category index into {@link #CATEGORY_KEYS}, and a layer
-         * marker - "c" for the layer shown directly in the category, "a" for the advanced
-         * layer that lives behind the category's "Advanced" sub-screen.
+         * Columns: preference key and category index into {@link #CATEGORY_KEYS}. Row order
+         * within a category is the display order, so a switch that others depend on has to come
+         * before its dependents.
          *
-         * The keys here are the ones stored in SharedPreferences and the ones the V+ backup
-         * importer maps. Do not rename them; add or remove rows instead.
+         * The keys are the ones stored in SharedPreferences and the ones the V+ backup importer
+         * maps. Do not rename them; add or remove rows instead.
          */
         private static final String[][] PREF_LAYOUT = {
-                // Picture
-                {"list_resolution", "0", "c"},
-                {"list_fps", "0", "c"},
-                {"checkbox_stretch_video", "0", "c"},
-                {"checkbox_enable_hdr", "0", "c"},
-                {"video_format", "0", "a"},
-                {"checkbox_full_range", "0", "a"},
-                {"checkbox_enable_sops", "0", "a"},
+                // Picture - HDR first, then the rest of the picture pipeline
+                {"checkbox_enable_hdr", "0"},
+                {"list_resolution", "0"},
+                {"list_fps", "0"},
+                {"checkbox_stretch_video", "0"},
+                {"video_format", "0"},
+                {"checkbox_full_range", "0"},
+                {"checkbox_enable_sops", "0"},
 
                 // Audio
-                {"list_audio_config", "1", "c"},
-                {"checkbox_host_audio", "1", "c"},
-                {"checkbox_enable_audiofx", "1", "a"},
+                {"list_audio_config", "1"},
+                {"checkbox_host_audio", "1"},
+                {"checkbox_enable_audiofx", "1"},
 
                 // Latency
-                {"frame_pacing", "2", "c"},
-                {"checkbox_reduce_refresh_rate", "2", "c"},
-                {"checkbox_enable_perf_overlay", "2", "c"},
-                {"list_perf_overlay_mode", "2", "c"},
-                {"checkbox_unlock_fps", "2", "a"},
-                {"checkbox_enable_post_stream_toast", "2", "a"},
+                {"frame_pacing", "2"},
+                {"checkbox_reduce_refresh_rate", "2"},
+                {"checkbox_unlock_fps", "2"},
+                {"checkbox_enable_perf_overlay", "2"},
+                {"list_perf_overlay_mode", "2"},
+                {"checkbox_enable_post_stream_toast", "2"},
 
-                // Input
-                {"checkbox_touchscreen_trackpad", "3", "c"},
-                {"checkbox_mouse_nav_buttons", "3", "c"},
-                {"checkbox_show_onscreen_controls", "3", "c"},
-                {"seekbar_deadzone", "3", "a"},
-                {"checkbox_multi_controller", "3", "a"},
-                {"checkbox_usb_driver", "3", "a"},
-                {"checkbox_usb_bind_all", "3", "a"},
-                {"checkbox_mouse_emulation", "3", "a"},
-                {"analog_scrolling", "3", "a"},
-                {"checkbox_vibrate_fallback", "3", "a"},
-                {"seekbar_vibrate_fallback_strength", "3", "a"},
-                {"checkbox_flip_face_buttons", "3", "a"},
-                {"checkbox_gamepad_touchpad_as_mouse", "3", "a"},
-                {"checkbox_gamepad_motion_sensors", "3", "a"},
-                {"checkbox_gamepad_motion_fallback", "3", "a"},
-                {"checkbox_absolute_mouse_mode", "3", "a"},
-                {"checkbox_vibrate_osc", "3", "a"},
-                {"checkbox_only_show_L3R3", "3", "a"},
-                {"checkbox_show_guide_button", "3", "a"},
-                {"seekbar_osc_opacity", "3", "a"},
+                // Input - touch and mouse, then on-screen controls, then gamepads
+                {"checkbox_touchscreen_trackpad", "3"},
+                {"checkbox_mouse_nav_buttons", "3"},
+                {"checkbox_absolute_mouse_mode", "3"},
+                {"checkbox_show_onscreen_controls", "3"},
+                {"checkbox_vibrate_osc", "3"},
+                {"checkbox_only_show_L3R3", "3"},
+                {"checkbox_show_guide_button", "3"},
+                {"seekbar_osc_opacity", "3"},
+                {"seekbar_deadzone", "3"},
+                {"checkbox_multi_controller", "3"},
+                {"checkbox_usb_driver", "3"},
+                {"checkbox_usb_bind_all", "3"},
+                {"checkbox_mouse_emulation", "3"},
+                {"analog_scrolling", "3"},
+                {"checkbox_vibrate_fallback", "3"},
+                {"seekbar_vibrate_fallback_strength", "3"},
+                {"checkbox_flip_face_buttons", "3"},
+                {"checkbox_gamepad_touchpad_as_mouse", "3"},
+                {"checkbox_gamepad_motion_sensors", "3"},
+                {"checkbox_gamepad_motion_fallback", "3"},
 
                 // Network
-                {"seekbar_bitrate_kbps", "4", "c"},
-                {"checkbox_adaptive_bitrate", "4", "c"},
+                {"seekbar_bitrate_kbps", "4"},
+                {"checkbox_adaptive_bitrate", "4"},
 
                 // Debug
-                {"restore_vplus_backup", "5", "c"},
-                {"checkbox_disable_warnings", "5", "c"},
-                {"list_languages", "5", "c"},
-                {"checkbox_enable_pip", "5", "a"},
-                {"checkbox_small_icon_mode", "5", "a"},
+                {"restore_vplus_backup", "5"},
+                {"checkbox_disable_warnings", "5"},
+                {"checkbox_enable_pip", "5"},
+                {"list_languages", "5"},
+                {"checkbox_small_icon_mode", "5"},
         };
 
         /**
-         * Rebuild the inflated preference screen as six categories, each with a common layer
-         * and an advanced sub-screen.
+         * Rebuild the inflated preference screen as six flat categories.
          *
          * The XML stays the single source of truth for every preference, its key and its
-         * default; this only moves the inflated objects into a new hierarchy. Moving the
-         * objects (rather than rewriting the XML) keeps every listener registered earlier in
+         * default; this only moves the inflated objects into a new hierarchy. Moving the objects
+         * (rather than rewriting the XML) keeps every listener registered earlier in
          * {@link #onCreate} attached, and lets the capability checks keep working against the
          * original category keys.
          *
-         * Preferences already removed by a capability check simply have no object to move, so
-         * a null lookup is expected rather than an error - but it is logged, because a layout
-         * row that matches nothing is usually a renamed key.
+         * Two rules earned the hard way:
+         *  - a group must be attached to the screen before anything is put into it, because
+         *    PreferenceGroup hands its own PreferenceManager down to the child and a detached
+         *    group has none (0.4.0 crashed on open because of this);
+         *  - no nested PreferenceScreen. The framework renders one as its own dialog window,
+         *    which ignores the activity's inset padding and draws over the status bar (0.4.1
+         *    shipped that). A flat list has neither problem.
          */
         private void applyCategoryLayout(PreferenceScreen screen) {
             if (screen == null) {
@@ -823,14 +823,9 @@ public class StreamSettings extends Activity {
             }
 
             PreferenceCategory[] categories = new PreferenceCategory[CATEGORY_KEYS.length];
-            PreferenceScreen[] advancedScreens = new PreferenceScreen[CATEGORY_KEYS.length];
-            int[] commonOrder = new int[CATEGORY_KEYS.length];
+            int[] nextOrder = new int[CATEGORY_KEYS.length];
 
-            // The new groups have to be attached to the screen BEFORE anything is put in them.
-            // PreferenceGroup.addPreference hands its own PreferenceManager to the child, and a
-            // group that is not attached to a hierarchy has none - so adding to a detached group
-            // dereferences null inside Preference.onAttachedToHierarchy. 0.4.0 shipped that way
-            // and crashed the settings screen on open.
+            // Attach first, fill second - see the class comment above.
             for (int i = 0; i < CATEGORY_KEYS.length; i++) {
                 PreferenceCategory category = new PreferenceCategory(screen.getContext());
                 category.setKey(CATEGORY_KEYS[i]);
@@ -853,33 +848,13 @@ public class StreamSettings extends Activity {
                 }
 
                 int categoryIndex = Integer.parseInt(row[1]);
-                boolean advanced = "a".equals(row[2]);
-
                 PreferenceGroup parent = preference.getParent();
                 if (parent != null) {
                     parent.removePreference(preference);
                 }
 
-                if (advanced) {
-                    PreferenceScreen sub = advancedScreens[categoryIndex];
-                    if (sub == null) {
-                        sub = getPreferenceManager().createPreferenceScreen(screen.getContext());
-                        sub.setKey(CATEGORY_KEYS[categoryIndex] + "_advanced");
-                        sub.setTitle(R.string.title_advanced_settings);
-                        // Groups insert their children by order, so the sub-screen's order has to
-                        // be set before it joins the category - a large value keeps it below the
-                        // common entries without having to know their final count.
-                        sub.setOrder(ADVANCED_SCREEN_ORDER);
-                        categories[categoryIndex].addPreference(sub);
-                        advancedScreens[categoryIndex] = sub;
-                    }
-                    preference.setOrder(moved);
-                    sub.addPreference(preference);
-                }
-                else {
-                    preference.setOrder(commonOrder[categoryIndex]++);
-                    categories[categoryIndex].addPreference(preference);
-                }
+                preference.setOrder(nextOrder[categoryIndex]++);
+                categories[categoryIndex].addPreference(preference);
 
                 if (preference.getPreferenceManager() == null) {
                     unattached++;
@@ -893,7 +868,7 @@ public class StreamSettings extends Activity {
             }
 
             if (unattached != 0) {
-                // Would mean a group was added detached again; visible as a crash on open.
+                // Would mean a group was filled while detached again; visible as a crash on open.
                 LimeLog.warning("settings layout: " + unattached + " preferences ended up without a manager");
             }
             LimeLog.info("settings layout: " + moved + " preferences in "

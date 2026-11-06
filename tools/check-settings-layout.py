@@ -34,8 +34,10 @@ def layout_rows() -> list[tuple[str, int, str]]:
     block = re.search(r"PREF_LAYOUT\s*=\s*\{(.*?)\n        \};", text, re.S)
     if not block:
         raise SystemExit("PREF_LAYOUT not found in " + str(JAVA))
-    rows = re.findall(r'\{"([^"]+)",\s*"(\d+)",\s*"([ca])"\}', block.group(1))
-    return [(k, int(i), m) for k, i, m in rows]
+    # Two columns since 0.4.2: the per-category advanced layer is gone, so the
+    # layer marker no longer exists.
+    rows = re.findall(r'\{"([^"]+)",\s*"(\d+)"\}', block.group(1))
+    return [(k, int(i), "c") for k, i in rows]
 
 
 def main() -> int:
