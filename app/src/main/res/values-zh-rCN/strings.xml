@@ -105,6 +105,15 @@
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
 
+    <string name="hdr_test_mode_pair">二分查找峰值</string>
+    <string name="hdr_test_mode_ladder">回到阶梯</string>
+    <string name="hdr_test_pair_hint">右边那块更亮吗？一直答到它不再更亮为止。</string>
+    <string name="hdr_test_pair_diff">更亮</string>
+    <string name="hdr_test_pair_same">一样</string>
+    <string name="hdr_test_pair_progress">第 %1$d 步：比较 %2$d 与 %3$d nit</string>
+    <string name="hdr_test_pair_result">峰值约 %1$d nit</string>
+    <string name="hdr_test_pair_ceiling">超出量程，至少 %1$d nit</string>
+
     <string name="title_hdr_high_brightness">HDR 用屏幕最高亮度</string>
     <string name="summary_hdr_high_brightness">HDR 串流期间把屏幕亮度拉满。更亮，也更耗电。</string>
 

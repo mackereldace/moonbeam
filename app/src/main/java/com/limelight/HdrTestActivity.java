@@ -17,6 +17,7 @@ import android.preference.PreferenceManager;
 import android.view.Display;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -30,46 +31,62 @@ import java.nio.ByteBuffer;
 import java.util.Locale;
 
 /**
- * On-device HDR test: play a brightness ladder and let the user say where two steps stop
- * being distinguishable.
+ * On-device HDR test.
  *
- * Why it exists: every other measurement we have runs through the host, so "the ladder
- * merges" cannot be attributed - it could be the panel, the system tone mapping, or our
- * streaming chain. This page removes the host from the loop and answers one question only:
- * on this screen, at this brightness, which step is the last one that still looks different?
+ * Two ways to use it:
  *
- * Playback goes through MediaCodec directly rather than MediaPlayer for one reason: the
- * streaming decoder asks for full-range output (KEY_COLOR_RANGE, set from the same
- * preference the stream uses) and MediaPlayer offers no way to do that. The clips are
- * therefore stored full-range too, which is the combination the whole HDR chain runs on -
- * client full-range preference, host full-range encoder, full-range capture. Playing them
- * any other way would measure a pipeline that never exists in practice.
+ *  - Ladder. Eight steps from 100 to 3200 nit, three layouts. Good for "can this screen show
+ *    separate highlights at all", useless for a number: consecutive steps merge somewhere and
+ *    the ladder's own resolution is the limit.
+ *  - Pair search. Two patches, X and X+200, and a binary search down the range. It asks one
+ *    question with an obvious answer - "does the right patch look brighter?" - and converges
+ *    to the luminance where the panel stops producing more light. This is the only one of the
+ *    two that can find a peak *above* what Android reports, which matters because some panels
+ *    under-report it.
  *
- * It is a perceptual tool, not a meter. It cannot report absolute luminance; it can say where
- * the useful ceiling is, which is exactly what the manual peak setting needs.
+ * Playback is MediaCodec, not MediaPlayer, because the stream decoder asks for full-range
+ * output (KEY_COLOR_RANGE from the same preference the stream uses) and MediaPlayer has no
+ * such knob. The clips are stored full range to match the chain this project runs on.
+ *
+ * It is a perceptual tool, not a meter: no absolute luminance, only where the ceiling is.
  */
 public class HdrTestActivity extends Activity implements SurfaceHolder.Callback {
 
-    /** Ladder steps, in the same order as the clips: 100/203/400/700/1000/1600/2400/3200. */
+    /** Ladder steps, matching the ladder clips. */
     private static final int[] STEPS_NITS = {100, 203, 400, 700, 1000, 1600, 2400, 3200};
+
+    /** Pair candidates: X and X+DELTA, one per segment of pairs.mp4. */
+    private static final int PAIR_START_NITS = 1000;
+    private static final int PAIR_STEP_NITS = 100;
+    private static final int PAIR_COUNT = 31;
+    private static final int PAIR_DELTA_NITS = 200;
+    private static final long PAIR_SEGMENT_US = 2_000_000L;
 
     private static final String[] CLIPS = {
             "hdr/ladder-A.mp4",  // eight adjacent bars, full height
             "hdr/ladder-B.mp4",  // the same bars at 40% height
             "hdr/ladder-C.mp4",  // one bar at a time
     };
+    private static final String PAIR_CLIP = "hdr/pairs.mp4";
 
     private SurfaceView surfaceView;
     private TextView infoView;
     private TextView hintView;
+    private TextView pairStatus;
     private LinearLayout stepRow;
+    private LinearLayout pairRow;
+    private Button pairModeButton;
     private final Button[] stepButtons = new Button[STEPS_NITS.length];
 
     private volatile boolean running;
     private Thread decodeThread;
     private volatile String pendingClip = CLIPS[0];
     private boolean surfaceReady;
-    private int selectedIndex = STEPS_NITS.length - 1;  // default: everything distinguishable
+    private int selectedIndex = STEPS_NITS.length - 1;
+
+    private boolean pairMode;
+    private int pairLo, pairHi, pairMid, pairAnswerIndex, pairSteps;
+    private int pairPeakNits;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable sampler = new Runnable() {
@@ -84,14 +101,10 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Keep the panel awake and at full brightness: a dimmed screen makes every step merge.
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         WindowManager.LayoutParams lp = getWindow().getAttributes();
         lp.screenBrightness = 1.0f;
         getWindow().setAttributes(lp);
-
-        // HDR on the window itself (API 26+). The SurfaceView below has its own headroom, so
-        // this is belt and braces rather than the mechanism that makes PQ reach the panel.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             getWindow().setColorMode(ActivityInfo.COLOR_MODE_HDR);
         }
@@ -102,11 +115,17 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         infoView = findViewById(R.id.hdrInfo);
         hintView = findViewById(R.id.hdrHint);
         stepRow = findViewById(R.id.hdrSteps);
+        pairRow = findViewById(R.id.hdrPairRow);
+        pairStatus = findViewById(R.id.hdrPairStatus);
+        pairModeButton = findViewById(R.id.hdrPairMode);
         surfaceView.getHolder().addCallback(this);
 
         buildStepButtons();
         wireLayoutButtons();
 
+        pairModeButton.setOnClickListener(v -> togglePairMode());
+        findViewById(R.id.hdrPairDiff).setOnClickListener(v -> answerPair(true));
+        findViewById(R.id.hdrPairSame).setOnClickListener(v -> answerPair(false));
         findViewById(R.id.hdrSave).setOnClickListener(v -> saveAndFinish());
         findViewById(R.id.hdrClose).setOnClickListener(v -> finish());
 
@@ -119,7 +138,6 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
             Button button = new Button(this);
             button.setText(String.format(Locale.US, "%d", STEPS_NITS[i]));
             button.setAllCaps(false);
-            button.setTag(index);
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                     0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
             button.setLayoutParams(params);
@@ -145,6 +163,9 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         for (int i = 0; i < ids.length; i++) {
             final int index = i;
             findViewById(ids[i]).setOnClickListener(v -> {
+                if (pairMode) {
+                    return;  // the pair clip has its own layout
+                }
                 pendingClip = CLIPS[index];
                 if (surfaceReady) {
                     startPlayback();
@@ -153,10 +174,164 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         }
     }
 
+    // ---- pair search -------------------------------------------------------
+
+    private void togglePairMode() {
+        pairMode = !pairMode;
+        stepRow.setVisibility(pairMode ? View.GONE : View.VISIBLE);
+        pairRow.setVisibility(pairMode ? View.VISIBLE : View.GONE);
+        pairModeButton.setText(pairMode ? R.string.hdr_test_mode_ladder : R.string.hdr_test_mode_pair);
+
+        if (pairMode) {
+            stopPlayback();
+            pairLo = 0;
+            pairHi = PAIR_COUNT - 1;
+            pairAnswerIndex = -1;
+            pairSteps = 0;
+            showNextPair();
+        }
+        else {
+            pairStatus.setText("");
+            startPlayback();
+        }
+    }
+
+    /** One comparison per step; the bracket halves until lo passes hi. */
+    private void showNextPair() {
+        if (pairLo > pairHi) {
+            finishPairSearch();
+            return;
+        }
+        pairMid = pairLo + (pairHi - pairLo) / 2;
+        pairSteps++;
+        int left = PAIR_START_NITS + pairMid * PAIR_STEP_NITS;
+        pairStatus.setText(getString(R.string.hdr_test_pair_progress, pairSteps,
+                left, left + PAIR_DELTA_NITS));
+        showPairFrame(pairMid);
+    }
+
+    private void answerPair(boolean different) {
+        if (!pairMode || pairLo > pairHi) {
+            return;
+        }
+        if (different) {
+            pairAnswerIndex = pairMid;
+            pairLo = pairMid + 1;
+        }
+        else {
+            pairHi = pairMid - 1;
+        }
+        showNextPair();
+    }
+
+    private void finishPairSearch() {
+        if (pairAnswerIndex >= 0) {
+            pairPeakNits = PAIR_START_NITS + pairAnswerIndex * PAIR_STEP_NITS + PAIR_DELTA_NITS;
+            pairStatus.setText(getString(R.string.hdr_test_pair_result, pairPeakNits));
+        }
+        else {
+            // Never looked different, even at the top of the range.
+            pairPeakNits = PAIR_START_NITS + (PAIR_COUNT - 1) * PAIR_STEP_NITS + PAIR_DELTA_NITS;
+            pairStatus.setText(getString(R.string.hdr_test_pair_ceiling, pairPeakNits));
+        }
+        pairStatus.setTextColor(Color.WHITE);
+    }
+
+    /** Seek to one comparison and freeze the frame on screen. */
+    private void showPairFrame(int index) {
+        stopPlayback();
+        final long targetUs = index * PAIR_SEGMENT_US;
+        new Thread(() -> {
+            MediaExtractor extractor = new MediaExtractor();
+            MediaCodec codec = null;
+            try {
+                AssetFileDescriptor afd = getAssets().openFd(PAIR_CLIP);
+                extractor.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+                afd.close();
+
+                int track = -1;
+                MediaFormat format = null;
+                for (int i = 0; i < extractor.getTrackCount(); i++) {
+                    MediaFormat candidate = extractor.getTrackFormat(i);
+                    String mime = candidate.getString(MediaFormat.KEY_MIME);
+                    if (mime != null && mime.startsWith("video/")) {
+                        track = i;
+                        format = candidate;
+                        break;
+                    }
+                }
+                if (format == null) {
+                    postError("no video track in " + PAIR_CLIP);
+                    return;
+                }
+                extractor.selectTrack(track);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    format.setInteger(MediaFormat.KEY_COLOR_RANGE, MediaFormat.COLOR_RANGE_FULL);
+                }
+
+                extractor.seekTo(targetUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+
+                codec = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME));
+                codec.configure(format, surfaceView.getHolder().getSurface(), null, 0);
+                codec.start();
+
+                MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
+                boolean fed = false;
+                long deadline = SystemClock.elapsedRealtime() + 3000;
+
+                while (SystemClock.elapsedRealtime() < deadline) {
+                    if (!fed) {
+                        int inIndex = codec.dequeueInputBuffer(10_000);
+                        if (inIndex >= 0) {
+                            ByteBuffer buffer = codec.getInputBuffer(inIndex);
+                            int size = buffer == null ? -1 : extractor.readSampleData(buffer, 0);
+                            if (size < 0) {
+                                codec.queueInputBuffer(inIndex, 0, 0, 0,
+                                        MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+                                break;
+                            }
+                            codec.queueInputBuffer(inIndex, 0, size, extractor.getSampleTime(), 0);
+                            extractor.advance();
+                            fed = true;
+                        }
+                    }
+                    int outIndex = codec.dequeueOutputBuffer(info, 10_000);
+                    if (outIndex >= 0) {
+                        // Frames before the target come from the keyframe the seek landed on.
+                        boolean reached = info.presentationTimeUs >= targetUs - 1;
+                        codec.releaseOutputBuffer(outIndex, reached);
+                        if (reached) {
+                            break;
+                        }
+                        fed = false;
+                    }
+                }
+            }
+            catch (IOException | RuntimeException e) {
+                postError(String.valueOf(e.getMessage()));
+            }
+            finally {
+                if (codec != null) {
+                    try {
+                        codec.stop();
+                    }
+                    catch (RuntimeException ignored) {
+                    }
+                    codec.release();
+                }
+                extractor.release();
+            }
+        }, "hdr-pair-seek").start();
+    }
+
+    // ---- ladder playback ---------------------------------------------------
+
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         surfaceReady = true;
-        startPlayback();
+        if (!pairMode) {
+            startPlayback();
+        }
     }
 
     @Override
@@ -193,12 +368,6 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         handler.removeCallbacks(sampler);
     }
 
-    /**
-     * Decode the ladder straight onto the SurfaceView, looping.
-     *
-     * Pacing matters for the single-bar clip: it holds each step for five seconds, and without
-     * waiting on presentation timestamps the decoder would run it at whatever rate it can.
-     */
     private void decodeLoop(String asset) {
         MediaExtractor extractor = new MediaExtractor();
         MediaCodec codec = null;
@@ -223,8 +392,6 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
                 return;
             }
             extractor.selectTrack(track);
-
-            // Same request the streaming decoder makes, from the same preference.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 format.setInteger(MediaFormat.KEY_COLOR_RANGE, MediaFormat.COLOR_RANGE_FULL);
             }
@@ -237,7 +404,6 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
             boolean inputDone = false;
             long firstPts = -1;
             long firstWall = 0;
-            long lastPts = 0;
 
             while (running) {
                 if (!inputDone) {
@@ -251,8 +417,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
                             inputDone = true;
                         }
                         else {
-                            lastPts = extractor.getSampleTime();
-                            codec.queueInputBuffer(inIndex, 0, size, lastPts, 0);
+                            codec.queueInputBuffer(inIndex, 0, size, extractor.getSampleTime(), 0);
                             extractor.advance();
                         }
                     }
@@ -267,8 +432,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
                         firstWall = SystemClock.elapsedRealtime();
                     }
                     else if (info.presentationTimeUs > firstPts) {
-                        long target = firstWall
-                                + (info.presentationTimeUs - firstPts) / 1000;
+                        long target = firstWall + (info.presentationTimeUs - firstPts) / 1000;
                         long wait = target - SystemClock.elapsedRealtime();
                         if (wait > 0 && wait < 1000) {
                             SystemClock.sleep(wait);
@@ -278,7 +442,6 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
                     codec.releaseOutputBuffer(outIndex, true);
 
                     if (eos) {
-                        // Rewind and start over: the clip is a loop of still frames.
                         codec.flush();
                         extractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
                         inputDone = false;
@@ -317,10 +480,8 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         sb.append(getString(R.string.hdr_test_info_hdr,
                 getString(hdr ? R.string.common_yes : R.string.common_no)));
 
-        // Display.getBrightnessInfo() and android.hardware.display.BrightnessInfo are @hide, so
-        // they are read reflectively and simply skipped when the platform does not expose them.
-        // Losing this line does not invalidate a run - isHdr and the ratio below still tell us
-        // whether the panel is in HDR - it only removes the evidence of *why* it is capped.
+        // Display.getBrightnessInfo() and BrightnessInfo are @hide: read reflectively, skipped
+        // when unavailable. Losing this line does not invalidate a run.
         try {
             Object info = Display.class.getMethod("getBrightnessInfo").invoke(display);
             if (info != null) {
@@ -328,8 +489,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
                 float white = type.getField("brightness").getFloat(info);
                 float max = type.getField("brightnessMaximum").getFloat(info);
                 int hbm = type.getField("highBrightnessMode").getInt(info);
-                sb.append("  ·  ").append(getString(R.string.hdr_test_info_brightness,
-                        fmt(white), fmt(max)));
+                sb.append("  ·  ").append(getString(R.string.hdr_test_info_brightness, fmt(white), fmt(max)));
                 sb.append("  ·  ").append(getString(R.string.hdr_test_info_hbm, hbmName(hbm)));
             }
         }
@@ -353,12 +513,11 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
             hintView.setTextColor(Color.parseColor("#FF6E6E"));
         }
         else {
-            hintView.setText(R.string.hdr_test_hint);
+            hintView.setText(pairMode ? R.string.hdr_test_pair_hint : R.string.hdr_test_hint);
             hintView.setTextColor(Color.WHITE);
         }
     }
 
-    /** High brightness mode: 0 off, 1 sunlight, 2 HDR. */
     private String hbmName(int mode) {
         switch (mode) {
             case 1:
@@ -375,7 +534,9 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     }
 
     private void saveAndFinish() {
-        int peak = STEPS_NITS[selectedIndex];
+        int peak = pairMode
+                ? Math.min(Math.max(pairPeakNits, 300), 4000)
+                : STEPS_NITS[selectedIndex];
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         prefs.edit()
                 .putBoolean(PreferenceConfiguration.HDR_BRIGHTNESS_OVERRIDE_PREF_STRING, true)
@@ -394,7 +555,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     @Override
     protected void onResume() {
         super.onResume();
-        if (surfaceReady) {
+        if (surfaceReady && !pairMode) {
             startPlayback();
         }
     }

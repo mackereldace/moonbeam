@@ -25,9 +25,10 @@ android {
         // 0.5.0  本机 HDR 显示测试：内嵌亮度阶梯，用户标出最后一档可分辨的亮度并写回峰值
         // 0.5.1  测试页改全范围：资产重出 pc 版，播放换 MediaCodec 并显式设 KEY_COLOR_RANGE
         // 0.5.2  HDR 会话给窗口声明 COLOR_MODE_HDR；新增"HDR 用屏幕最高亮度"开关
+        // 0.5.3  HDR 测试加二分查找：两patch对比，逐步收窄到面板真正的亮度上限
         // 1.0.0  首个正式版
-        versionName "0.5.2"
-        versionCode = 502
+        versionName "0.5.3"
+        versionCode = 503
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'
