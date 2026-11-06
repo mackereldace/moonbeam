@@ -6,49 +6,49 @@
     "primaries": "bt2020",
     "transfer": "smpte2084",
     "matrix": "bt2020nc",
-    "range": "tv",
+    "range": "pc",
     "depth": 10
   },
   "steps": [
     {
       "nits": 100.0,
-      "pq_code": 509,
-      "decoded_nits": 90.0
+      "pq_code": 520,
+      "decoded_nits": 100.2
     },
     {
       "nits": 203.0,
-      "pq_code": 573,
-      "decoded_nits": 166.6
+      "pq_code": 594,
+      "decoded_nits": 202.9
     },
     {
       "nits": 400.0,
-      "pq_code": 636,
-      "decoded_nits": 299.5
+      "pq_code": 668,
+      "decoded_nits": 401.5
     },
     {
       "nits": 700.0,
-      "pq_code": 688,
-      "decoded_nits": 481.6
+      "pq_code": 729,
+      "decoded_nits": 697.4
     },
     {
       "nits": 1000.0,
-      "pq_code": 722,
-      "decoded_nits": 654.8
+      "pq_code": 769,
+      "decoded_nits": 998.9
     },
     {
       "nits": 1600.0,
-      "pq_code": 768,
-      "decoded_nits": 990.0
+      "pq_code": 822,
+      "decoded_nits": 1606.2
     },
     {
       "nits": 2400.0,
-      "pq_code": 806,
-      "decoded_nits": 1391.7
+      "pq_code": 867,
+      "decoded_nits": 2405.3
     },
     {
       "nits": 3200.0,
-      "pq_code": 834,
-      "decoded_nits": 1788.6
+      "pq_code": 899,
+      "decoded_nits": 3209.3
     }
   ],
   "clips": {

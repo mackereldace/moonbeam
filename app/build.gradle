@@ -23,9 +23,10 @@ android {
         // 0.4.4  亮度报告摘要分三行；设置页剩余英文全部资源化（含备份导入对话框）
         // 0.4.5  输入栏按触控/屏幕控件/手柄分段；一批含义不清的标题与说明重写
         // 0.5.0  本机 HDR 显示测试：内嵌亮度阶梯，用户标出最后一档可分辨的亮度并写回峰值
+        // 0.5.1  测试页改全范围：资产重出 pc 版，播放换 MediaCodec 并显式设 KEY_COLOR_RANGE
         // 1.0.0  首个正式版
-        versionName "0.5.0"
-        versionCode = 500
+        versionName "0.5.1"
+        versionCode = 501
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'
