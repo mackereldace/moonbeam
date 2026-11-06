@@ -18,6 +18,8 @@ import com.limelight.binding.video.MediaCodecDecoderRenderer;
 import com.limelight.binding.video.MediaCodecHelper;
 import com.limelight.binding.video.PerfHudData;
 import com.limelight.telemetry.AbrController;
+import com.limelight.utils.HdrBrightness;
+import com.limelight.utils.HdrDisplayCapabilities;
 import com.limelight.telemetry.SessionTelemetry;
 import com.limelight.binding.video.PerfOverlayListener;
 import com.limelight.nvstream.NvConnection;
@@ -491,6 +493,18 @@ public class Game extends Activity implements SurfaceHolder.Callback,
             }
         }
 
+        // What this phone's display says it can do, and optionally the user's peak override.
+        // HDR sessions only: outside HDR the numbers would describe a target nobody uses.
+        HdrBrightness hdrBrightness = null;
+        if (willStreamHdr) {
+            HdrDisplayCapabilities caps = HdrDisplayCapabilities.probe(this);
+            hdrBrightness = HdrBrightness.forSession(caps.brightness,
+                    prefConfig.hdrBrightnessOverride ? prefConfig.hdrPeakBrightnessNits : null);
+            if (hdrBrightness != null) {
+                android.util.Log.i("Moonbeam", "HDR brightness report: " + hdrBrightness.describe());
+            }
+        }
+
         StreamConfiguration config = new StreamConfiguration.Builder()
                 .setResolution(prefConfig.width, prefConfig.height)
                 .setLaunchRefreshRate(prefConfig.fps)
@@ -508,6 +522,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                 .setColorSpace(decoderRenderer.getPreferredColorSpace())
                 .setColorRange(decoderRenderer.getPreferredColorRange())
                 .setPersistGamepadsAfterDisconnect(!prefConfig.multiController)
+                .setHdrBrightness(hdrBrightness)
                 .build();
 
         // Initialize the connection

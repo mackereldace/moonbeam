@@ -257,6 +257,29 @@
             android:title="@string/title_enable_hdr"
             android:summary="@string/summary_enable_hdr"
             android:defaultValue="false" />
+        <Preference
+            android:key="hdr_brightness_report"
+            android:title="@string/title_hdr_brightness_report"
+            android:summary="@string/summary_hdr_brightness_report"
+            android:persistent="false" />
+        <CheckBoxPreference
+            android:key="checkbox_hdr_brightness_override"
+            android:title="@string/title_hdr_brightness_override"
+            android:summary="@string/summary_hdr_brightness_override"
+            android:defaultValue="false" />
+        <com.limelight.preferences.SeekBarPreference
+            android:key="seekbar_hdr_peak_brightness_nits"
+            android:title="@string/title_hdr_peak_brightness_nits"
+            android:summary="@string/summary_hdr_peak_brightness_nits"
+            android:dialogMessage="@string/summary_hdr_peak_brightness_nits"
+            android:dependency="checkbox_hdr_brightness_override"
+            android:defaultValue="1000"
+            android:max="4000"
+            android:text="@string/suffix_hdr_peak_brightness_nits"
+            seekbar:min="300"
+            seekbar:step="50"
+            seekbar:keyStep="50"
+            seekbar:divisor="1" />
         <CheckBoxPreference
             android:key="checkbox_full_range"
             android:title="@string/title_full_range"

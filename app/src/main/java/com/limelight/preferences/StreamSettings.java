@@ -592,9 +592,7 @@ public class StreamSettings extends Activity {
             // Remove HDR preference for devices below Nougat
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
                 LimeLog.info("Excluding HDR toggle based on OS");
-                PreferenceCategory category =
-                        (PreferenceCategory) findPreference("category_advanced_settings");
-                category.removePreference(findPreference("checkbox_enable_hdr"));
+                removeHdrPreferences();
             }
             else {
                 Display.HdrCapabilities hdrCaps = display.getHdrCapabilities();
@@ -613,9 +611,7 @@ public class StreamSettings extends Activity {
 
                 if (!foundHdr10) {
                     LimeLog.info("Excluding HDR toggle based on display capabilities");
-                    PreferenceCategory category =
-                            (PreferenceCategory) findPreference("category_advanced_settings");
-                    category.removePreference(findPreference("checkbox_enable_hdr"));
+                    removeHdrPreferences();
                 }
                 else if (PreferenceConfiguration.isShieldAtvFirmwareWithBrokenHdr()) {
                     LimeLog.info("Disabling HDR toggle on old broken SHIELD TV firmware");
@@ -626,6 +622,25 @@ public class StreamSettings extends Activity {
                     hdrPref.setChecked(false);
                     hdrPref.setSummary("Update the firmware on your NVIDIA SHIELD Android TV to enable HDR");
                 }
+            }
+
+            // Show what this display reports, and let the user inspect the whole picture.
+            // The report is read-only on purpose: the numbers are the system's claim, and the
+            // only knob worth exposing is the manual peak below it.
+            Preference hdrReport = findPreference("hdr_brightness_report");
+            if (hdrReport != null) {
+                final com.limelight.utils.HdrDisplayCapabilities capabilities =
+                        com.limelight.utils.HdrDisplayCapabilities.probe(getActivity());
+                hdrReport.setSummary(capabilities.summary());
+                hdrReport.setOnPreferenceClickListener(preference -> {
+                    new android.app.AlertDialog.Builder(getActivity())
+                            .setTitle(R.string.title_hdr_brightness_report)
+                            .setMessage(capabilities.detail())
+                            .setPositiveButton(android.R.string.ok, null)
+                            .show();
+                    return true;
+                });
+                LimeLog.info("HDR display: " + capabilities.summary());
             }
 
             // Add a listener to the FPS and resolution preference
@@ -728,6 +743,26 @@ public class StreamSettings extends Activity {
         };
 
         /**
+         * Drop every HDR-related entry when this device cannot stream HDR.
+         *
+         * They are removed by key rather than by parent category, because each of them lives in
+         * its own group in the XML and the capability checks run before the layout is rebuilt.
+         */
+        private void removeHdrPreferences() {
+            for (String key : new String[] {
+                    "checkbox_enable_hdr",
+                    "hdr_brightness_report",
+                    "checkbox_hdr_brightness_override",
+                    "seekbar_hdr_peak_brightness_nits",
+            }) {
+                Preference preference = findPreference(key);
+                if (preference != null && preference.getParent() != null) {
+                    preference.getParent().removePreference(preference);
+                }
+            }
+        }
+
+        /**
          * Where each preference belongs in the refactored layout.
          *
          * Columns: preference key and category index into {@link #CATEGORY_KEYS}. Row order
@@ -740,6 +775,9 @@ public class StreamSettings extends Activity {
         private static final String[][] PREF_LAYOUT = {
                 // Picture - HDR first, then the rest of the picture pipeline
                 {"checkbox_enable_hdr", "0"},
+                {"hdr_brightness_report", "0"},
+                {"checkbox_hdr_brightness_override", "0"},
+                {"seekbar_hdr_peak_brightness_nits", "0"},
                 {"list_resolution", "0"},
                 {"list_fps", "0"},
                 {"checkbox_stretch_video", "0"},

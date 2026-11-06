@@ -104,6 +104,13 @@
     <string name="addpc_enter_ip">请输入一个IP地址</string>
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
+    <string name="title_hdr_brightness_report">HDR 亮度报告</string>
+    <string name="summary_hdr_brightness_report">这块屏的 HDR 能力以及会向主机上报的亮度</string>
+    <string name="title_hdr_brightness_override">手动校准 HDR 峰值</string>
+    <string name="summary_hdr_brightness_override">HDR 画面发灰或偏暗时，用它替换上报给主机的峰值</string>
+    <string name="title_hdr_peak_brightness_nits">HDR 峰值亮度</string>
+    <string name="summary_hdr_peak_brightness_nits">数值越高，主机按更亮的 HDR 屏幕处理；改完需要重新连接</string>
+    <string name="suffix_hdr_peak_brightness_nits">nit</string>
     <string name="category_basic_settings"> 基本设置 </string>
     <!-- 六分类设置页（0.4.0）。音频/输入沿用已有字符串。 -->
     <string name="category_picture_settings">画面</string>

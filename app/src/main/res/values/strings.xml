@@ -144,6 +144,13 @@
     <string name="addpc_wrong_sitelocal">That address doesn\'t look right. You must use your router\'s public IP address for streaming over the Internet.</string>
 
     <!-- Preferences -->
+    <string name="title_hdr_brightness_report">HDR brightness report</string>
+    <string name="summary_hdr_brightness_report">What this display tells the host about its HDR range</string>
+    <string name="title_hdr_brightness_override">Manual HDR peak</string>
+    <string name="summary_hdr_brightness_override">Replace the peak reported to the host when HDR looks dim or washed out</string>
+    <string name="title_hdr_peak_brightness_nits">HDR peak brightness</string>
+    <string name="summary_hdr_peak_brightness_nits">Higher values make the host target a brighter HDR display. Reconnect after changing.</string>
+    <string name="suffix_hdr_peak_brightness_nits">nit</string>
     <string name="category_basic_settings">Basic Settings</string>
     <!-- Six-category settings layout (0.4.0). Audio and Input reuse the existing strings. -->
     <string name="category_picture_settings">Picture</string>

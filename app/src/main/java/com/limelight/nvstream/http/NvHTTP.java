@@ -813,6 +813,10 @@ public class NvHTTP {
             "&remoteControllersBitmap=" + context.streamConfig.getAttachedGamepadMask() +
             "&gcmap=" + context.streamConfig.getAttachedGamepadMask() +
             "&gcpersist="+(context.streamConfig.getPersistGamepadsAfterDisconnect() ? 1 : 0) +
+            // What this phone says its HDR display can do. Stock Sunshine ignores it; the
+            // patches that use it take the values as the target for tone mapping and metadata.
+            (context.streamConfig.getHdrBrightness() == null ? "" :
+                    context.streamConfig.getHdrBrightness().toQueryParameters()) +
             MoonBridge.getLaunchUrlQueryParameters());
         if ((verb.equals("launch") && !getXmlString(xmlStr, "gamesession", true).equals("0") ||
                 (verb.equals("resume") && !getXmlString(xmlStr, "resume", true).equals("0")))) {

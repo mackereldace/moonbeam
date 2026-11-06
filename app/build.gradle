@@ -19,9 +19,10 @@ android {
         // 0.4.0  设置页六分类（画面/音频/延迟/输入/网络/调试）+ 常用/高级两层
         // 0.4.1  修 0.4.0 设置页必崩：新分类必须先挂到屏幕再往里放条目
         // 0.4.2  去掉二级"高级设置"页（弹窗遮状态栏），六分类扁平化，画面以 HDR 打头
+        // 0.4.3  画面收纳 HDR 配置：亮度报告 + 手动峰值，开机探测并随 launch 上报
         // 1.0.0  首个正式版
-        versionName "0.4.2"
-        versionCode = 402
+        versionName "0.4.3"
+        versionCode = 403
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'

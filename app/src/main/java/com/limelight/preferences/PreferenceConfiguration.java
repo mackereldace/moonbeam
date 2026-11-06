@@ -48,6 +48,10 @@ public class PreferenceConfiguration {
     private static final String SHOW_GUIDE_BUTTON_PREF_STRING = "checkbox_show_guide_button";
     private static final String LEGACY_DISABLE_FRAME_DROP_PREF_STRING = "checkbox_disable_frame_drop";
     private static final String ENABLE_HDR_PREF_STRING = "checkbox_enable_hdr";
+    private static final String HDR_BRIGHTNESS_OVERRIDE_PREF_STRING = "checkbox_hdr_brightness_override";
+    private static final String HDR_PEAK_BRIGHTNESS_NITS_PREF_STRING = "seekbar_hdr_peak_brightness_nits";
+    private static final boolean DEFAULT_HDR_BRIGHTNESS_OVERRIDE = false;
+    private static final int DEFAULT_HDR_PEAK_BRIGHTNESS_NITS = 1000;
     private static final String ENABLE_PIP_PREF_STRING = "checkbox_enable_pip";
     private static final String ENABLE_PERF_OVERLAY_STRING = "checkbox_enable_perf_overlay";
 
@@ -144,6 +148,9 @@ public class PreferenceConfiguration {
     public boolean onlyL3R3;
     public boolean showGuideButton;
     public boolean enableHdr;
+    /** Replace the peak the display reports to the host with a manual one. */
+    public boolean hdrBrightnessOverride;
+    public int hdrPeakBrightnessNits;
     public boolean enablePip;
     public boolean enablePerfOverlay;
     /** One of PERF_OVERLAY_OFF / PERF_OVERLAY_NUMBERS / PERF_OVERLAY_HUD. */
@@ -594,6 +601,10 @@ public class PreferenceConfiguration {
         config.onlyL3R3 = prefs.getBoolean(ONLY_L3_R3_PREF_STRING, ONLY_L3_R3_DEFAULT);
         config.showGuideButton = prefs.getBoolean(SHOW_GUIDE_BUTTON_PREF_STRING, SHOW_GUIDE_BUTTON_DEFAULT);
         config.enableHdr = prefs.getBoolean(ENABLE_HDR_PREF_STRING, DEFAULT_ENABLE_HDR) && !isShieldAtvFirmwareWithBrokenHdr();
+        config.hdrBrightnessOverride = prefs.getBoolean(HDR_BRIGHTNESS_OVERRIDE_PREF_STRING,
+                DEFAULT_HDR_BRIGHTNESS_OVERRIDE);
+        config.hdrPeakBrightnessNits = prefs.getInt(HDR_PEAK_BRIGHTNESS_NITS_PREF_STRING,
+                DEFAULT_HDR_PEAK_BRIGHTNESS_NITS);
         config.enablePip = prefs.getBoolean(ENABLE_PIP_PREF_STRING, DEFAULT_ENABLE_PIP);
         config.enablePerfOverlay = prefs.getBoolean(ENABLE_PERF_OVERLAY_STRING, DEFAULT_ENABLE_PERF_OVERLAY);
         // The checkbox stays as the master switch for backwards compatibility; the list picks

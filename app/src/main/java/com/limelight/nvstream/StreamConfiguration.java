@@ -1,6 +1,7 @@
 package com.limelight.nvstream;
 
 import com.limelight.nvstream.http.NvApp;
+import com.limelight.utils.HdrBrightness;
 import com.limelight.nvstream.jni.MoonBridge;
 
 public class StreamConfiguration {
@@ -28,6 +29,8 @@ public class StreamConfiguration {
     private int colorRange;
     private int colorSpace;
     private boolean persistGamepadsAfterDisconnect;
+    /** What this display reported about its HDR brightness, or null when unknown. */
+    private HdrBrightness hdrBrightness;
 
     public static class Builder {
         private StreamConfiguration config = new StreamConfiguration();
@@ -80,6 +83,11 @@ public class StreamConfiguration {
         
         public StreamConfiguration.Builder setMaxPacketSize(int maxPacketSize) {
             config.maxPacketSize = maxPacketSize;
+            return this;
+        }
+
+        public StreamConfiguration.Builder setHdrBrightness(HdrBrightness hdrBrightness) {
+            config.hdrBrightness = hdrBrightness;
             return this;
         }
 
@@ -166,6 +174,10 @@ public class StreamConfiguration {
         return launchRefreshRate;
     }
     
+    public HdrBrightness getHdrBrightness() {
+        return hdrBrightness;
+    }
+
     public int getBitrate() {
         return bitrate;
     }
