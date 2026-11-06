@@ -1,0 +1,74 @@
+{
+  "width": 2608,
+  "height": 1200,
+  "fps": 60,
+  "color": {
+    "primaries": "bt2020",
+    "transfer": "smpte2084",
+    "matrix": "bt2020nc",
+    "range": "tv",
+    "depth": 10
+  },
+  "steps": [
+    {
+      "nits": 100.0,
+      "pq_code": 509,
+      "decoded_nits": 90.0
+    },
+    {
+      "nits": 203.0,
+      "pq_code": 573,
+      "decoded_nits": 166.6
+    },
+    {
+      "nits": 400.0,
+      "pq_code": 636,
+      "decoded_nits": 299.5
+    },
+    {
+      "nits": 700.0,
+      "pq_code": 688,
+      "decoded_nits": 481.6
+    },
+    {
+      "nits": 1000.0,
+      "pq_code": 722,
+      "decoded_nits": 654.8
+    },
+    {
+      "nits": 1600.0,
+      "pq_code": 768,
+      "decoded_nits": 990.0
+    },
+    {
+      "nits": 2400.0,
+      "pq_code": 806,
+      "decoded_nits": 1391.7
+    },
+    {
+      "nits": 3200.0,
+      "pq_code": 834,
+      "decoded_nits": 1788.6
+    }
+  ],
+  "clips": {
+    "A": {
+      "file": "ladder-A.mp4",
+      "duration_s": 30,
+      "lit_fraction": 1.0,
+      "description": "eight adjacent bars, full height (100% of the screen lit)"
+    },
+    "B": {
+      "file": "ladder-B.mp4",
+      "duration_s": 30,
+      "lit_fraction": 0.4,
+      "description": "eight adjacent bars at 40% height, centred"
+    },
+    "C": {
+      "file": "ladder-C.mp4",
+      "duration_s": 40,
+      "lit_fraction": 0.05,
+      "description": "one centred bar at a time, 5 s per step"
+    }
+  }
+}

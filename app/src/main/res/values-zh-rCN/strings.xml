@@ -104,6 +104,24 @@
     <string name="addpc_enter_ip">请输入一个IP地址</string>
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
+
+    <string name="title_hdr_display_test">HDR 显示测试</string>
+    <string name="summary_hdr_display_test">在本机播一段亮度阶梯，标出哪一档开始分辨不出来</string>
+    <string name="hdr_test_hint">点你能分辨的最后一档；再往上的档位在你眼里已经一样了。</string>
+    <string name="hdr_test_not_hdr">当前窗口不在 HDR 模式，这次结果不可信</string>
+    <string name="hdr_test_info_hdr">HDR：%1$s</string>
+    <string name="hdr_test_info_brightness">SDR 白 %1$s / 上限 %2$s</string>
+    <string name="hdr_test_hbm_sunlight">阳光下高亮</string>
+    <string name="hdr_test_hbm_hdr">HDR</string>
+    <string name="hdr_test_info_hbm">高亮模式：%1$s</string>
+    <string name="hdr_test_info_ratio">HDR/SDR %1$s</string>
+    <string name="hdr_test_layout_a">整条</string>
+    <string name="hdr_test_layout_b">半高</string>
+    <string name="hdr_test_layout_c">单档</string>
+    <string name="hdr_test_save">保存并采用</string>
+    <string name="hdr_test_close">关闭</string>
+    <string name="hdr_test_saved">峰值已设为 %1$d nit，重新连接后生效。</string>
+    <string name="hdr_test_play_error">无法播放测试片：%1$s</string>
     <string name="section_input_gamepad">手柄</string>
     <string name="section_input_onscreen">屏幕控件</string>
     <string name="section_input_touch">触控与鼠标</string>

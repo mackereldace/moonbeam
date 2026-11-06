@@ -643,6 +643,14 @@ public class StreamSettings extends Activity {
                 LimeLog.info("HDR display: " + capabilities.summary(getActivity()).replace('\n', ' '));
             }
 
+            Preference hdrTest = findPreference("hdr_display_test");
+            if (hdrTest != null) {
+                hdrTest.setOnPreferenceClickListener(preference -> {
+                    startActivity(new Intent(getActivity(), com.limelight.HdrTestActivity.class));
+                    return true;
+                });
+            }
+
             // Add a listener to the FPS and resolution preference
             // so the bitrate can be auto-adjusted
             findPreference(PreferenceConfiguration.RESOLUTION_PREF_STRING).setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
@@ -752,6 +760,7 @@ public class StreamSettings extends Activity {
             for (String key : new String[] {
                     "checkbox_enable_hdr",
                     "hdr_brightness_report",
+                    "hdr_display_test",
                     "checkbox_hdr_brightness_override",
                     "seekbar_hdr_peak_brightness_nits",
             }) {
@@ -776,6 +785,7 @@ public class StreamSettings extends Activity {
                 // Picture - HDR first, then the rest of the picture pipeline
                 {"checkbox_enable_hdr", "0"},
                 {"hdr_brightness_report", "0"},
+                {"hdr_display_test", "0"},
                 {"checkbox_hdr_brightness_override", "0"},
                 {"seekbar_hdr_peak_brightness_nits", "0"},
                 {"list_resolution", "0"},

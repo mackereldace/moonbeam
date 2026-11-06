@@ -144,6 +144,24 @@
     <string name="addpc_wrong_sitelocal">That address doesn\'t look right. You must use your router\'s public IP address for streaming over the Internet.</string>
 
     <!-- Preferences -->
+
+    <string name="title_hdr_display_test">HDR display test</string>
+    <string name="summary_hdr_display_test">Play a brightness ladder on this screen and mark where two steps stop looking different</string>
+    <string name="hdr_test_hint">Tap the last step you can still tell apart. Everything above it looks the same to you.</string>
+    <string name="hdr_test_not_hdr">This window is not in HDR mode - the result would not be trustworthy</string>
+    <string name="hdr_test_info_hdr">HDR: %1$s</string>
+    <string name="hdr_test_info_brightness">SDR white %1$s / max %2$s</string>
+    <string name="hdr_test_hbm_sunlight">sunlight</string>
+    <string name="hdr_test_hbm_hdr">HDR</string>
+    <string name="hdr_test_info_hbm">high-brightness mode: %1$s</string>
+    <string name="hdr_test_info_ratio">HDR/SDR %1$s</string>
+    <string name="hdr_test_layout_a">Bars</string>
+    <string name="hdr_test_layout_b">Short bars</string>
+    <string name="hdr_test_layout_c">One at a time</string>
+    <string name="hdr_test_save">Save and use</string>
+    <string name="hdr_test_close">Close</string>
+    <string name="hdr_test_saved">Peak set to %1$d nit. Reconnect for it to take effect.</string>
+    <string name="hdr_test_play_error">Cannot play the test clip: %1$s</string>
     <string name="section_input_gamepad">Gamepad</string>
     <string name="section_input_onscreen">On-screen controls</string>
     <string name="section_input_touch">Touch &amp; mouse</string>

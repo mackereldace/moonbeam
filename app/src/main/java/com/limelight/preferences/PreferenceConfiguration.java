@@ -48,8 +48,8 @@ public class PreferenceConfiguration {
     private static final String SHOW_GUIDE_BUTTON_PREF_STRING = "checkbox_show_guide_button";
     private static final String LEGACY_DISABLE_FRAME_DROP_PREF_STRING = "checkbox_disable_frame_drop";
     private static final String ENABLE_HDR_PREF_STRING = "checkbox_enable_hdr";
-    private static final String HDR_BRIGHTNESS_OVERRIDE_PREF_STRING = "checkbox_hdr_brightness_override";
-    private static final String HDR_PEAK_BRIGHTNESS_NITS_PREF_STRING = "seekbar_hdr_peak_brightness_nits";
+    public static final String HDR_BRIGHTNESS_OVERRIDE_PREF_STRING = "checkbox_hdr_brightness_override";
+    public static final String HDR_PEAK_BRIGHTNESS_NITS_PREF_STRING = "seekbar_hdr_peak_brightness_nits";
     private static final boolean DEFAULT_HDR_BRIGHTNESS_OVERRIDE = false;
     private static final int DEFAULT_HDR_PEAK_BRIGHTNESS_NITS = 1000;
     private static final String ENABLE_PIP_PREF_STRING = "checkbox_enable_pip";

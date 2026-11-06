@@ -262,6 +262,11 @@
             android:title="@string/title_hdr_brightness_report"
             android:summary="@string/summary_hdr_brightness_report"
             android:persistent="false" />
+        <Preference
+            android:key="hdr_display_test"
+            android:title="@string/title_hdr_display_test"
+            android:summary="@string/summary_hdr_display_test"
+            android:persistent="false" />
         <CheckBoxPreference
             android:key="checkbox_hdr_brightness_override"
             android:title="@string/title_hdr_brightness_override"

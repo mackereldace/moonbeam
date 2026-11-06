@@ -45,7 +45,8 @@ def main() -> int:
     # visible as the XML ones, so check those too.
     java_refs = set()
     for java in [ROOT / "app/src/main/java/com/limelight/preferences/StreamSettings.java",
-                 ROOT / "app/src/main/java/com/limelight/utils/HdrDisplayCapabilities.java"]:
+                 ROOT / "app/src/main/java/com/limelight/utils/HdrDisplayCapabilities.java",
+                 ROOT / "app/src/main/java/com/limelight/HdrTestActivity.java"]:
         java_refs |= set(# (?!android\.) so android.R.string.ok/cancel do not look like app strings
         re.findall(r"(?<!android\.)R\.string\.([A-Za-z0-9_]+)", java.read_text(encoding="utf-8")))
     java_refs -= {"category_audio_settings", "category_input_settings"}
