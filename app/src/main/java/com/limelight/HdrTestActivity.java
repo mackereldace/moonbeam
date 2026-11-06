@@ -60,7 +60,8 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private static final int PAIR_STEP_NITS = 100;
     private static final int PAIR_COUNT = 31;
     private static final int PAIR_DELTA_NITS = 200;
-    private static final long PAIR_SEGMENT_US = 2_000_000L;
+    /** Segment length is derived from the clip's real duration, not assumed. */
+    private long pairSegmentUs = 2_000_000L;
 
     private static final String[] CLIPS = {
             "hdr/ladder-A.mp4",  // eight adjacent bars, full height
@@ -240,7 +241,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     /** Seek to one comparison and freeze the frame on screen. */
     private void showPairFrame(int index) {
         stopPlayback();
-        final long targetUs = index * PAIR_SEGMENT_US;
+        final int segment = index;
         new Thread(() -> {
             MediaExtractor extractor = new MediaExtractor();
             MediaCodec codec = null;
@@ -269,10 +270,26 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
                     format.setInteger(MediaFormat.KEY_COLOR_RANGE, MediaFormat.COLOR_RANGE_FULL);
                 }
 
-                extractor.seekTo(targetUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+                if (format.containsKey(MediaFormat.KEY_DURATION)) {
+                    long durationUs = format.getLong(MediaFormat.KEY_DURATION);
+                    if (durationUs > 0) {
+                        // Trust the file over the constant: a wrong segment length would seek
+                        // past the end and leave the previous frame on screen with no error.
+                        pairSegmentUs = durationUs / PAIR_COUNT;
+                    }
+                }
+                long target = Math.min(segment * pairSegmentUs,
+                        Math.max(0, pairSegmentUs * PAIR_COUNT - 1));
+                extractor.seekTo(target, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+
+                if (surfaceView.getHolder().getSurface() == null
+                        || !surfaceView.getHolder().getSurface().isValid()) {
+                    postError("surface not ready");
+                    return;
+                }
 
                 codec = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME));
-                codec.configure(format, surfaceView.getHolder().getSurface(), null, 0);
+                configureWithRetry(codec, format);
                 codec.start();
 
                 MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
@@ -298,7 +315,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
                     int outIndex = codec.dequeueOutputBuffer(info, 10_000);
                     if (outIndex >= 0) {
                         // Frames before the target come from the keyframe the seek landed on.
-                        boolean reached = info.presentationTimeUs >= targetUs - 1;
+                        boolean reached = info.presentationTimeUs >= target - 1;
                         codec.releaseOutputBuffer(outIndex, reached);
                         if (reached) {
                             break;
@@ -308,7 +325,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
                 }
             }
             catch (IOException | RuntimeException e) {
-                postError(String.valueOf(e.getMessage()));
+                postError(e.getClass().getSimpleName() + ": " + e.getMessage());
             }
             finally {
                 if (codec != null) {
@@ -463,6 +480,21 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
                 codec.release();
             }
             extractor.release();
+        }
+    }
+
+    /**
+     * A Surface accepts one rendering codec at a time, and the previous one is released on a
+     * different thread. Retry once instead of failing the whole comparison.
+     */
+    private void configureWithRetry(MediaCodec codec, MediaFormat format) throws IOException {
+        try {
+            codec.configure(format, surfaceView.getHolder().getSurface(), null, 0);
+        }
+        catch (IllegalStateException first) {
+            SystemClock.sleep(200);
+            codec.reset();
+            codec.configure(format, surfaceView.getHolder().getSurface(), null, 0);
         }
     }
 

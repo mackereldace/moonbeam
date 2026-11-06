@@ -26,9 +26,10 @@ android {
         // 0.5.1  测试页改全范围：资产重出 pc 版，播放换 MediaCodec 并显式设 KEY_COLOR_RANGE
         // 0.5.2  HDR 会话给窗口声明 COLOR_MODE_HDR；新增"HDR 用屏幕最高亮度"开关
         // 0.5.3  HDR 测试加二分查找：两patch对比，逐步收窄到面板真正的亮度上限
+        // 0.5.4  修二分模式无法播放：pairs.mp4 段长算错（0.5s/段，总长 15.5s），seek 越界
         // 1.0.0  首个正式版
-        versionName "0.5.3"
-        versionCode = 503
+        versionName "0.5.4"
+        versionCode = 504
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'
