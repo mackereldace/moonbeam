@@ -17,9 +17,10 @@ android {
         // 0.2.0  指标引擎 + HUD
         // 0.3.0  三档面板 + 遥测
         // 0.4.0  设置页六分类（画面/音频/延迟/输入/网络/调试）+ 常用/高级两层
+        // 0.4.1  修 0.4.0 设置页必崩：新分类必须先挂到屏幕再往里放条目
         // 1.0.0  首个正式版
-        versionName "0.4.0"
-        versionCode = 400
+        versionName "0.4.1"
+        versionCode = 401
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'

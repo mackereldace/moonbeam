@@ -701,7 +701,15 @@ public class StreamSettings extends Activity {
             }
 
             // Everything that needs the original XML hierarchy is done. Rebuild it now.
-            applyCategoryLayout(getPreferenceScreen());
+            try {
+                applyCategoryLayout(getPreferenceScreen());
+            }
+            catch (RuntimeException e) {
+                // A layout experiment must not be able to take the whole settings screen down:
+                // 0.4.0 did exactly that by adding entries to a category that was not attached
+                // yet. Swallow it, keep whatever hierarchy exists, and leave a trace.
+                LimeLog.warning("settings layout failed, keeping the inflated hierarchy: " + e);
+            }
         }
 
         /** Keys of the six top-level categories, in display order. */
@@ -718,6 +726,9 @@ public class StreamSettings extends Activity {
                 R.string.category_network_settings,
                 R.string.category_debug_settings,
         };
+
+        /** Sort key that keeps a category's advanced sub-screen below its common entries. */
+        private static final int ADVANCED_SCREEN_ORDER = 1000;
 
         /**
          * Where each preference belongs in the refactored layout.
@@ -814,18 +825,24 @@ public class StreamSettings extends Activity {
             PreferenceCategory[] categories = new PreferenceCategory[CATEGORY_KEYS.length];
             PreferenceScreen[] advancedScreens = new PreferenceScreen[CATEGORY_KEYS.length];
             int[] commonOrder = new int[CATEGORY_KEYS.length];
-            int[] advancedOrder = new int[CATEGORY_KEYS.length];
 
+            // The new groups have to be attached to the screen BEFORE anything is put in them.
+            // PreferenceGroup.addPreference hands its own PreferenceManager to the child, and a
+            // group that is not attached to a hierarchy has none - so adding to a detached group
+            // dereferences null inside Preference.onAttachedToHierarchy. 0.4.0 shipped that way
+            // and crashed the settings screen on open.
             for (int i = 0; i < CATEGORY_KEYS.length; i++) {
                 PreferenceCategory category = new PreferenceCategory(screen.getContext());
                 category.setKey(CATEGORY_KEYS[i]);
                 category.setTitle(CATEGORY_TITLES[i]);
                 category.setOrder(i);
+                screen.addPreference(category);
                 categories[i] = category;
             }
 
             int moved = 0;
             int missing = 0;
+            int unattached = 0;
 
             for (String[] row : PREF_LAYOUT) {
                 Preference preference = findPreference(row[0]);
@@ -838,38 +855,36 @@ public class StreamSettings extends Activity {
                 int categoryIndex = Integer.parseInt(row[1]);
                 boolean advanced = "a".equals(row[2]);
 
-                PreferenceGroup target;
-                if (advanced) {
-                    if (advancedScreens[categoryIndex] == null) {
-                        // PreferenceScreen has no public (Context, AttributeSet) constructor;
-                        // the manager's factory is the supported way to build one in code.
-                        PreferenceScreen sub = getPreferenceManager().createPreferenceScreen(screen.getContext());
-                        sub.setKey(CATEGORY_KEYS[categoryIndex] + "_advanced");
-                        sub.setTitle(R.string.title_advanced_settings);
-                        advancedScreens[categoryIndex] = sub;
-                    }
-                    target = advancedScreens[categoryIndex];
-                    preference.setOrder(advancedOrder[categoryIndex]++);
-                }
-                else {
-                    target = categories[categoryIndex];
-                    preference.setOrder(commonOrder[categoryIndex]++);
-                }
-
                 PreferenceGroup parent = preference.getParent();
                 if (parent != null) {
                     parent.removePreference(preference);
                 }
-                target.addPreference(preference);
-                moved++;
-            }
 
-            for (int i = 0; i < CATEGORY_KEYS.length; i++) {
-                if (advancedScreens[i] != null) {
-                    advancedScreens[i].setOrder(commonOrder[i]);
-                    categories[i].addPreference(advancedScreens[i]);
+                if (advanced) {
+                    PreferenceScreen sub = advancedScreens[categoryIndex];
+                    if (sub == null) {
+                        sub = getPreferenceManager().createPreferenceScreen(screen.getContext());
+                        sub.setKey(CATEGORY_KEYS[categoryIndex] + "_advanced");
+                        sub.setTitle(R.string.title_advanced_settings);
+                        // Groups insert their children by order, so the sub-screen's order has to
+                        // be set before it joins the category - a large value keeps it below the
+                        // common entries without having to know their final count.
+                        sub.setOrder(ADVANCED_SCREEN_ORDER);
+                        categories[categoryIndex].addPreference(sub);
+                        advancedScreens[categoryIndex] = sub;
+                    }
+                    preference.setOrder(moved);
+                    sub.addPreference(preference);
                 }
-                screen.addPreference(categories[i]);
+                else {
+                    preference.setOrder(commonOrder[categoryIndex]++);
+                    categories[categoryIndex].addPreference(preference);
+                }
+
+                if (preference.getPreferenceManager() == null) {
+                    unattached++;
+                }
+                moved++;
             }
 
             // The old groups are empty now; leaving them would show stray headers.
@@ -877,6 +892,10 @@ public class StreamSettings extends Activity {
                 screen.removePreference(oldGroup);
             }
 
+            if (unattached != 0) {
+                // Would mean a group was added detached again; visible as a crash on open.
+                LimeLog.warning("settings layout: " + unattached + " preferences ended up without a manager");
+            }
             LimeLog.info("settings layout: " + moved + " preferences in "
                     + CATEGORY_KEYS.length + " categories, " + missing + " unavailable on this device");
         }
