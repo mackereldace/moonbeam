@@ -430,6 +430,18 @@ public class Game extends Activity implements SurfaceHolder.Callback,
             Toast.makeText(this, "Decoder does not support HDR10 profile", Toast.LENGTH_LONG).show();
         }
 
+        // Declare the session HDR on the window. Without this the system treats the surface as
+        // SDR and grants only SDR headroom, which is what makes HDR content look flat.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            getWindow().setColorMode(willStreamHdr
+                    ? ActivityInfo.COLOR_MODE_HDR : ActivityInfo.COLOR_MODE_DEFAULT);
+        }
+        WindowManager.LayoutParams hdrWindowParams = getWindow().getAttributes();
+        hdrWindowParams.screenBrightness = (willStreamHdr && prefConfig.hdrHighBrightness)
+                ? WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL
+                : WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
+        getWindow().setAttributes(hdrWindowParams);
+
         // Display a message to the user if HEVC was forced on but we still didn't find a decoder
         if (prefConfig.videoFormat == PreferenceConfiguration.FormatOption.FORCE_HEVC && !decoderRenderer.isHevcSupported()) {
             Toast.makeText(this, "No HEVC decoder found", Toast.LENGTH_LONG).show();
@@ -1100,6 +1112,14 @@ public class Game extends Activity implements SurfaceHolder.Callback,
     @Override
     protected void onDestroy() {
         super.onDestroy();
+
+        // Leaving HDR mode behind would keep the window tinted and the backlight pinned.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            getWindow().setColorMode(ActivityInfo.COLOR_MODE_DEFAULT);
+        }
+        WindowManager.LayoutParams reset = getWindow().getAttributes();
+        reset.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
+        getWindow().setAttributes(reset);
 
         if (controllerHandler != null) {
             controllerHandler.destroy();

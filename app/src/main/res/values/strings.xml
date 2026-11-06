@@ -145,8 +145,11 @@
 
     <!-- Preferences -->
 
+    <string name="title_hdr_high_brightness">Max brightness in HDR</string>
+    <string name="summary_hdr_high_brightness">Pin the screen at full brightness while streaming HDR. Brighter, and hotter.</string>
+
     <string name="title_hdr_display_test">HDR display test</string>
-    <string name="summary_hdr_display_test">Play a brightness ladder on this screen and mark where two steps stop looking different</string>
+    <string name="summary_hdr_display_test">Play a ladder here and mark the last step you can tell apart</string>
     <string name="hdr_test_hint">Tap the last step you can still tell apart. Everything above it looks the same to you.</string>
     <string name="hdr_test_not_hdr">This window is not in HDR mode - the result would not be trustworthy</string>
     <string name="hdr_test_info_hdr">HDR: %1$s</string>
@@ -207,11 +210,11 @@
     <string name="vplus_cannot_open">Cannot read the selected file</string>
     <string name="toast_no_file_picker">No file picker available</string>
     <string name="title_hdr_brightness_report">HDR brightness report</string>
-    <string name="summary_hdr_brightness_report">What this display tells the host about its HDR range</string>
+    <string name="summary_hdr_brightness_report">This display\'s HDR ability and what gets reported</string>
     <string name="title_hdr_brightness_override">Manual HDR peak</string>
-    <string name="summary_hdr_brightness_override">Replace the peak reported to the host when HDR looks dim or washed out</string>
+    <string name="summary_hdr_brightness_override">Replace the reported peak when HDR looks washed out</string>
     <string name="title_hdr_peak_brightness_nits">HDR peak brightness</string>
-    <string name="summary_hdr_peak_brightness_nits">Higher values make the host target a brighter HDR display. Reconnect after changing.</string>
+    <string name="summary_hdr_peak_brightness_nits">Host treats this as the screen\'s brightness; reconnect after changing</string>
     <string name="suffix_hdr_peak_brightness_nits">nit</string>
     <string name="category_basic_settings">Basic Settings</string>
     <!-- Six-category settings layout (0.4.0). Audio and Input reuse the existing strings. -->
@@ -251,7 +254,7 @@
     <string name="summary_seekbar_vibrate_fallback_strength">Amplify or reduce the vibration intensity on your device</string>
     <string name="suffix_seekbar_vibrate_fallback_strength">%</string>
     <string name="title_seekbar_deadzone">Adjust analog stick deadzone</string>
-    <string name="summary_seekbar_deadzone">A worn stick drifts around centre; the dead zone ignores that little offset. Larger suppresses drift but feels duller, and a game\'s own dead zone may be bigger than this one.</string>
+    <string name="summary_seekbar_deadzone">Ignores stick drift near centre. Larger hides drift but feels duller.</string>
     <string name="suffix_seekbar_deadzone">%</string>
     <string name="title_checkbox_xb1_driver">Built-in Xbox gamepad driver</string>
     <string name="summary_checkbox_xb1_driver">Hand Xbox 360/One pads to the app\'s own driver. Use it on devices whose system support for them is broken.</string>
@@ -264,17 +267,17 @@
     <string name="title_checkbox_gamepad_touchpad_as_mouse">Gamepad touchpad always drives the mouse</string>
     <string name="summary_checkbox_gamepad_touchpad_as_mouse">Even when a game is using the touchpad, force it to move the host cursor.</string>
     <string name="title_checkbox_gamepad_motion_sensors">Let the host read pad motion</string>
-    <string name="summary_checkbox_gamepad_motion_sensors">Let the host ask the pad for motion data. Turn it off when the game does not use motion - it saves a little power and bandwidth.</string>
+    <string name="summary_checkbox_gamepad_motion_sensors">Let the host read pad motion; off saves a little power and bandwidth.</string>
     <string name="title_checkbox_gamepad_motion_fallback">Use phone motion when the pad has none</string>
-    <string name="summary_checkbox_gamepad_motion_fallback">Use the phone\'s own sensors when the pad or this Android version has none. Note: the host may then identify the pad as a PS4 controller.</string>
+    <string name="summary_checkbox_gamepad_motion_fallback">Use phone motion when the pad has none; the host may see a PS4 pad.</string>
 
     <string name="category_input_settings">Input Settings</string>
     <string name="title_checkbox_touchscreen_trackpad">Use the touchscreen as a trackpad</string>
-    <string name="summary_checkbox_touchscreen_trackpad">On: dragging on the screen moves the cursor relatively, like a laptop trackpad. Off: the cursor jumps to wherever you tap.</string>
+    <string name="summary_checkbox_touchscreen_trackpad">On: relative movement like a trackpad. Off: tap where you want the cursor.</string>
     <string name="title_checkbox_absolute_mouse_mode">Absolute mouse (desktop use)</string>
-    <string name="summary_checkbox_absolute_mouse_mode">The cursor maps to a position on screen, which suits desktop work and remote windows. Most games behave badly with it, so keep it off for gaming.</string>
+    <string name="summary_checkbox_absolute_mouse_mode">Cursor follows screen position: good for desktops, bad for most games.</string>
     <string name="title_checkbox_mouse_nav_buttons">Mouse side buttons</string>
-    <string name="summary_checkbox_mouse_nav_buttons">Send the mouse\'s side buttons (back/forward) to the PC. On some devices this makes right-click stop working; leave it off there.</string>
+    <string name="summary_checkbox_mouse_nav_buttons">Send the side buttons; a few devices lose right-click with it.</string>
 
     <string name="category_on_screen_controls_settings">On-screen Controls Settings</string>
     <string name="title_checkbox_show_onscreen_controls">Show on-screen buttons</string>
@@ -291,7 +294,7 @@
     <string name="dialog_text_reset_osc">Are you sure you want to delete your saved on-screen controls layout?</string>
     <string name="toast_reset_osc_success">On-screen controls reset to default</string>
     <string name="title_osc_opacity">Change opacity of on-screen controls</string>
-    <string name="summary_osc_opacity">How solid the on-screen buttons look. 0 is fully transparent: still tappable, but invisible.</string>
+    <string name="summary_osc_opacity">0 is fully transparent, still tappable.</string>
     <string name="dialog_title_osc_opacity">Opacity</string>
     <string name="suffix_osc_opacity">%</string>
 

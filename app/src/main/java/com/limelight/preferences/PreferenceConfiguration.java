@@ -50,6 +50,7 @@ public class PreferenceConfiguration {
     private static final String ENABLE_HDR_PREF_STRING = "checkbox_enable_hdr";
     public static final String HDR_BRIGHTNESS_OVERRIDE_PREF_STRING = "checkbox_hdr_brightness_override";
     public static final String HDR_PEAK_BRIGHTNESS_NITS_PREF_STRING = "seekbar_hdr_peak_brightness_nits";
+    private static final String HDR_HIGH_BRIGHTNESS_PREF_STRING = "checkbox_hdr_high_brightness";
     private static final boolean DEFAULT_HDR_BRIGHTNESS_OVERRIDE = false;
     private static final int DEFAULT_HDR_PEAK_BRIGHTNESS_NITS = 1000;
     private static final String ENABLE_PIP_PREF_STRING = "checkbox_enable_pip";
@@ -151,6 +152,8 @@ public class PreferenceConfiguration {
     /** Replace the peak the display reports to the host with a manual one. */
     public boolean hdrBrightnessOverride;
     public int hdrPeakBrightnessNits;
+    /** Pin the screen at full brightness for HDR sessions. */
+    public boolean hdrHighBrightness;
     public boolean enablePip;
     public boolean enablePerfOverlay;
     /** One of PERF_OVERLAY_OFF / PERF_OVERLAY_NUMBERS / PERF_OVERLAY_HUD. */
@@ -605,6 +608,7 @@ public class PreferenceConfiguration {
                 DEFAULT_HDR_BRIGHTNESS_OVERRIDE);
         config.hdrPeakBrightnessNits = prefs.getInt(HDR_PEAK_BRIGHTNESS_NITS_PREF_STRING,
                 DEFAULT_HDR_PEAK_BRIGHTNESS_NITS);
+        config.hdrHighBrightness = prefs.getBoolean(HDR_HIGH_BRIGHTNESS_PREF_STRING, false);
         config.enablePip = prefs.getBoolean(ENABLE_PIP_PREF_STRING, DEFAULT_ENABLE_PIP);
         config.enablePerfOverlay = prefs.getBoolean(ENABLE_PERF_OVERLAY_STRING, DEFAULT_ENABLE_PERF_OVERLAY);
         // The checkbox stays as the master switch for backwards compatibility; the list picks

@@ -105,8 +105,11 @@
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
 
+    <string name="title_hdr_high_brightness">HDR 用屏幕最高亮度</string>
+    <string name="summary_hdr_high_brightness">HDR 串流期间把屏幕亮度拉满。更亮，也更耗电。</string>
+
     <string name="title_hdr_display_test">HDR 显示测试</string>
-    <string name="summary_hdr_display_test">在本机播一段亮度阶梯，标出哪一档开始分辨不出来</string>
+    <string name="summary_hdr_display_test">本机播亮度阶梯，标出最后一档能分辨的亮度</string>
     <string name="hdr_test_hint">点你能分辨的最后一档；再往上的档位在你眼里已经一样了。</string>
     <string name="hdr_test_not_hdr">当前窗口不在 HDR 模式，这次结果不可信</string>
     <string name="hdr_test_info_hdr">HDR：%1$s</string>
@@ -169,11 +172,11 @@
     <string name="vplus_cannot_open">读不到所选文件</string>
     <string name="toast_no_file_picker">没有可用的文件选择器</string>
     <string name="title_hdr_brightness_report">HDR 亮度报告</string>
-    <string name="summary_hdr_brightness_report">这块屏的 HDR 能力以及会向主机上报的亮度</string>
+    <string name="summary_hdr_brightness_report">本机 HDR 能力与上报值</string>
     <string name="title_hdr_brightness_override">手动校准 HDR 峰值</string>
-    <string name="summary_hdr_brightness_override">HDR 画面发灰或偏暗时，用它替换上报给主机的峰值</string>
+    <string name="summary_hdr_brightness_override">HDR 发灰时，替换上报的峰值</string>
     <string name="title_hdr_peak_brightness_nits">HDR 峰值亮度</string>
-    <string name="summary_hdr_peak_brightness_nits">数值越高，主机按更亮的 HDR 屏幕处理；改完需要重新连接</string>
+    <string name="summary_hdr_peak_brightness_nits">主机据此判断屏幕亮度；改完需重连</string>
     <string name="suffix_hdr_peak_brightness_nits">nit</string>
     <string name="category_basic_settings"> 基本设置 </string>
     <!-- 六分类设置页（0.4.0）。音频/输入沿用已有字符串。 -->
@@ -199,7 +202,7 @@
     <string name="summary_audio_config_list"> 为家庭影院系统启用5.1或7.1环绕声 </string>
     <string name="category_input_settings">输入设置</string>
     <string name="title_checkbox_touchscreen_trackpad">把触屏当触控板</string>
-    <string name="summary_checkbox_touchscreen_trackpad">开着：手指在屏幕上滑动像触控板，光标相对移动。关着：点哪里光标就去哪里。</string>
+    <string name="summary_checkbox_touchscreen_trackpad">开：像触控板相对移动；关：点哪去哪。</string>
     <string name="title_checkbox_multi_controller">多手柄各算一个玩家</string>
     <string name="summary_checkbox_multi_controller">开着：每个连上的手柄在主机上是不同的玩家。关着：所有手柄合并成一个。</string>
     <string name="title_checkbox_vibrate_fallback">用手机震动代替手柄震动</string>
@@ -213,7 +216,7 @@
     <string name="title_checkbox_mouse_emulation">用手柄控制鼠标</string>
     <string name="summary_checkbox_mouse_emulation">长按实体手柄的 Start 键，把它切换成鼠标模式。</string>
     <string name="title_checkbox_mouse_nav_buttons">鼠标侧键（前进/后退）</string>
-    <string name="summary_checkbox_mouse_nav_buttons">把鼠标侧键（前进/后退）发给电脑。个别设备上会导致右键失灵，遇到就关掉。</string>
+    <string name="summary_checkbox_mouse_nav_buttons">侧键发给电脑；个别设备会令右键失灵。</string>
     <string name="title_checkbox_flip_face_buttons">交换 A/B 与 X/Y</string>
     <string name="summary_checkbox_flip_face_buttons">实体手柄和屏幕虚拟手柄同时生效。</string>
     <string name="category_on_screen_controls_settings"> 屏幕控制按钮设置 </string>
@@ -252,7 +255,7 @@
     <string name="title_osc_opacity">更改屏幕按钮透明度</string>
     <string name="dialog_title_osc_opacity">透明度</string>
     <string name="suffix_osc_opacity">%</string>
-    <string name="summary_osc_opacity">屏幕按键的透明度。0 为完全透明：看不见，但仍然可以点按。</string>
+    <string name="summary_osc_opacity">0 为全透明，仍可点按。</string>
     <string name="nettest_text_failure">您设备的当前网络似乎正在阻止Moonlight。连接到该网络时，可能无法通过互联网串流。
 \n
 \n以下网络端口被阻止：
@@ -321,9 +324,9 @@
     <string name="summary_frame_pacing">指定如何平衡视频延迟和流畅度</string>
     <string name="pacing_balanced_alt">有FPS限制的平衡</string>
     <string name="pacing_latency">优先最低延迟</string>
-    <string name="summary_seekbar_deadzone">摇杆回中不准会有漂移，死区用来忽略这点小偏移。调大更能压住漂移但操作变钝；游戏自带的死区可能比这里更大。</string>
+    <string name="summary_seekbar_deadzone">忽略回中偏移。调大压漂移但变钝。</string>
     <string name="title_checkbox_absolute_mouse_mode">绝对坐标鼠标（办公用）</string>
-    <string name="summary_checkbox_absolute_mouse_mode">光标按屏幕位置移动，适合操作桌面和远程窗口；多数游戏会表现异常，玩游戏时关掉。</string>
+    <string name="summary_checkbox_absolute_mouse_mode">光标按屏幕位置走：适合桌面，多数游戏异常。</string>
     <string name="resolution_prefix_native_landscape">（横向）</string>
     <string name="resolution_prefix_native_portrait">（纵向）</string>
     <string name="title_checkbox_enable_audiofx">启用对系统均衡器的支持</string>
@@ -344,11 +347,11 @@
     <string name="title_checkbox_gamepad_touchpad_as_mouse">手柄触控板永远控制鼠标</string>
     <string name="summary_checkbox_gamepad_touchpad_as_mouse">即使游戏正把这块触控板当作触控板使用，也强制它控制主机鼠标。</string>
     <string name="title_checkbox_gamepad_motion_sensors">允许主机读取手柄体感</string>
-    <string name="summary_checkbox_gamepad_motion_sensors">让主机能向手柄请求体感数据。游戏不用体感时可以关掉，省一点电和带宽。</string>
+    <string name="summary_checkbox_gamepad_motion_sensors">允许主机读取体感；不用时可关，省电省带宽。</string>
     <string name="videoformat_av1always">首选 AV1（实验性）</string>
     <string name="videoformat_h264always">首选 H.264</string>
     <string name="toast_controller_type_changed">游戏手柄类型可能会因运动传感器模拟而改变</string>
-    <string name="summary_checkbox_gamepad_motion_fallback">手柄没有体感、或系统版本不支持时，改用手机自己的体感。注意：这样手柄可能被主机识别成 PS4 手柄。</string>
+    <string name="summary_checkbox_gamepad_motion_fallback">没有体感时用手机体感；可能被主机认成 PS4 手柄。</string>
     <string name="title_checkbox_gamepad_motion_fallback">手柄没有体感时用手机体感</string>
     <string name="error_code_prefix">错误代码:</string>
     <string name="title_seekbar_vibrate_fallback_strength">模拟震动强度</string>

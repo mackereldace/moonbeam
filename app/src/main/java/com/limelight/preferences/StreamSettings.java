@@ -759,6 +759,7 @@ public class StreamSettings extends Activity {
         private void removeHdrPreferences() {
             for (String key : new String[] {
                     "checkbox_enable_hdr",
+                    "checkbox_hdr_high_brightness",
                     "hdr_brightness_report",
                     "hdr_display_test",
                     "checkbox_hdr_brightness_override",
@@ -784,6 +785,7 @@ public class StreamSettings extends Activity {
         private static final String[][] PREF_LAYOUT = {
                 // Picture - HDR first, then the rest of the picture pipeline
                 {"checkbox_enable_hdr", "0"},
+                {"checkbox_hdr_high_brightness", "0"},
                 {"hdr_brightness_report", "0"},
                 {"hdr_display_test", "0"},
                 {"checkbox_hdr_brightness_override", "0"},
