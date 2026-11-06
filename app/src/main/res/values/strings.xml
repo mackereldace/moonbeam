@@ -147,11 +147,11 @@
 
     <string name="hdr_test_mode_pair">Binary search for the peak</string>
     <string name="hdr_test_mode_ladder">Back to the ladder</string>
-    <string name="hdr_test_pair_hint">Is the right patch brighter? Answer until it stops being brighter.</string>
-    <string name="hdr_test_pair_diff">Brighter</string>
+    <string name="hdr_test_pair_hint">Same brightness on both sides? Separate: the left moves up. Same: the right moves down.</string>
+    <string name="hdr_test_pair_diff">Can tell apart</string>
     <string name="hdr_test_pair_same">Same</string>
-    <string name="hdr_test_pair_progress">Step %1$d: compare %2$d and %3$d nit</string>
-    <string name="hdr_test_pair_result">Peak about %1$d nit</string>
+    <string name="hdr_test_pair_progress">Step %1$d: %2$d vs %3$d nit</string>
+    <string name="hdr_test_pair_result">Peak about %1$d nit (%2$d-%3$d)</string>
     <string name="hdr_test_pair_ceiling">Above this range, at least %1$d nit</string>
 
     <string name="title_hdr_high_brightness">Max brightness in HDR</string>
