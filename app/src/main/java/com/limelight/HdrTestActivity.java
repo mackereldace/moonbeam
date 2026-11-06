@@ -29,71 +29,94 @@ import com.limelight.preferences.PreferenceConfiguration;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * On-device HDR test.
  *
- * Two ways to use it:
+ * Ladder mode: eight fixed steps, three layouts, for a rough look at whether the screen can
+ * separate highlights at all.
  *
- *  - Ladder. Eight steps from 100 to 3200 nit, three layouts. Good for "can this screen show
- *    separate highlights at all", useless for a number: consecutive steps merge somewhere and
- *    the ladder's own resolution is the limit.
- *  - Pair search. Two patches, X and X+200, and a binary search down the range. It asks one
- *    question with an obvious answer - "does the right patch look brighter?" - and converges
- *    to the luminance where the panel stops producing more light. This is the only one of the
- *    two that can find a peak *above* what Android reports, which matters because some panels
- *    under-report it.
+ * Pair mode: a log bisection. The two panes show the current bounds - left = lower, right =
+ * upper - starting at 100 and 10000 nit. "Tell them apart" means the lower bound is still
+ * below the ceiling, so it moves up; otherwise the upper bound comes down. Six answers put the
+ * ceiling between two neighbouring steps of a 48-step log ladder, and nothing is capped by the
+ * peak Android reports.
  *
- * Playback is MediaCodec, not MediaPlayer, because the stream decoder asks for full-range
- * output (KEY_COLOR_RANGE from the same preference the stream uses) and MediaPlayer has no
- * such knob. The clips are stored full range to match the chain this project runs on.
- *
- * It is a perceptual tool, not a meter: no absolute luminance, only where the ceiling is.
+ * Decoding is MediaCodec with KEY_COLOR_RANGE full, matching the streaming decoder and the
+ * full-range chain this project runs on. The level clip is all-intra at 1 fps so a seek lands
+ * on the exact frame and one decode is enough.
  */
 public class HdrTestActivity extends Activity implements SurfaceHolder.Callback {
 
-    /** Ladder steps, matching the ladder clips. */
     private static final int[] STEPS_NITS = {100, 203, 400, 700, 1000, 1600, 2400, 3200};
 
-    /** Pair candidates: X and X+DELTA, one per segment of pairs.mp4. */
-    private static final int PAIR_START_NITS = 1000;
-    private static final int PAIR_STEP_NITS = 100;
-    private static final int PAIR_COUNT = 31;
-    private static final int PAIR_DELTA_NITS = 200;
-    /** Segment length is derived from the clip's real duration, not assumed. */
-    private long pairSegmentUs = 2_000_000L;
-
-    private static final String[] CLIPS = {
+    private static final String[] LADDER_CLIPS = {
             "hdr/ladder-A.mp4",  // eight adjacent bars, full height
             "hdr/ladder-B.mp4",  // the same bars at 40% height
             "hdr/ladder-C.mp4",  // one bar at a time
     };
     private static final String LEVEL_CLIP = "hdr/levels.mp4";
-    /** Log-spaced levels in levels.mp4: 100 nit to 10000 nit. */
     private static final int LEVEL_COUNT = 48;
     private static final double LEVEL_MIN_NITS = 100.0;
     private static final double LEVEL_MAX_NITS = 10000.0;
 
-    private SurfaceView surfaceView;   // left pane; full width in ladder mode
-    private SurfaceView surfaceViewB;  // right pane; pair mode only
+    /** One SurfaceView plus the decoder that feeds it. Kept alive across comparisons. */
+    private final class Pane {
+        final SurfaceView view;
+        MediaExtractor extractor;
+        MediaCodec codec;
+        long segmentUs = 1_000_000L;
+
+        Pane(SurfaceView view) {
+            this.view = view;
+        }
+
+        boolean hasSurface() {
+            return view.getHolder().getSurface() != null && view.getHolder().getSurface().isValid();
+        }
+
+        void close() {
+            if (codec != null) {
+                try {
+                    codec.stop();
+                }
+                catch (RuntimeException ignored) {
+                }
+                codec.release();
+                codec = null;
+            }
+            if (extractor != null) {
+                extractor.release();
+                extractor = null;
+            }
+        }
+    }
+
+    private Pane paneA;
+    private Pane paneB;
+
     private TextView infoView;
     private TextView hintView;
     private TextView pairStatus;
+    private LinearLayout ladderRow;
     private LinearLayout stepRow;
     private LinearLayout pairRow;
     private Button pairModeButton;
-    private final Button[] stepButtons = new Button[STEPS_NITS.length];
+    private Button[] stepButtons;
 
     private volatile boolean running;
-    private Thread decodeThread;
-    private volatile String pendingClip = CLIPS[0];
-    private boolean surfaceReady;
+    private Thread ladderThread;
+    private volatile String pendingClip = LADDER_CLIPS[0];
     private int selectedIndex = STEPS_NITS.length - 1;
 
     private boolean pairMode;
     private int levelLo, levelHi, pairSteps;
     private double pairPeakNits;
-    private long levelSegmentUs = 1_000_000L;
+
+    /** One renderer thread: a Surface takes one codec at a time, and answers come in bursts. */
+    private final ExecutorService renderer = Executors.newSingleThreadExecutor();
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable sampler = new Runnable() {
@@ -118,20 +141,21 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
 
         setContentView(R.layout.activity_hdr_test);
 
-        surfaceView = findViewById(R.id.hdrSurface);
-        surfaceViewB = findViewById(R.id.hdrSurfaceB);
+        paneA = new Pane((SurfaceView) findViewById(R.id.hdrSurface));
+        paneB = new Pane((SurfaceView) findViewById(R.id.hdrSurfaceB));
         infoView = findViewById(R.id.hdrInfo);
         hintView = findViewById(R.id.hdrHint);
+        pairStatus = findViewById(R.id.hdrPairStatus);
+        ladderRow = findViewById(R.id.hdrLadderRow);
         stepRow = findViewById(R.id.hdrSteps);
         pairRow = findViewById(R.id.hdrPairRow);
-        pairStatus = findViewById(R.id.hdrPairStatus);
         pairModeButton = findViewById(R.id.hdrPairMode);
-        surfaceView.getHolder().addCallback(this);
-        surfaceViewB.getHolder().addCallback(this);
+
+        paneA.view.getHolder().addCallback(this);
+        paneB.view.getHolder().addCallback(this);
 
         buildStepButtons();
         wireLayoutButtons();
-
         pairModeButton.setOnClickListener(v -> togglePairMode());
         findViewById(R.id.hdrPairDiff).setOnClickListener(v -> answerPair(true));
         findViewById(R.id.hdrPairSame).setOnClickListener(v -> answerPair(false));
@@ -142,16 +166,17 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     }
 
     private void buildStepButtons() {
+        stepButtons = new Button[STEPS_NITS.length];
         for (int i = 0; i < STEPS_NITS.length; i++) {
             final int index = i;
             Button button = new Button(this);
             button.setText(String.format(Locale.US, "%d", STEPS_NITS[i]));
             button.setAllCaps(false);
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-            button.setLayoutParams(params);
             button.setTextSize(11f);
+            button.setTextColor(Color.WHITE);
             button.setPadding(0, 0, 0, 0);
+            button.setLayoutParams(new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
             button.setOnClickListener(v -> selectStep(index));
             stepRow.addView(button);
             stepButtons[i] = button;
@@ -172,58 +197,55 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         for (int i = 0; i < ids.length; i++) {
             final int index = i;
             findViewById(ids[i]).setOnClickListener(v -> {
-                if (pairMode) {
-                    return;  // the pair clip has its own layout
-                }
-                pendingClip = CLIPS[index];
-                if (surfaceReady) {
-                    startPlayback();
+                pendingClip = LADDER_CLIPS[index];
+                if (!pairMode) {
+                    startLadder();
                 }
             });
         }
     }
 
-    // ---- pair search -------------------------------------------------------
+    // ---- pair mode: log bisection -----------------------------------------
 
     private void togglePairMode() {
         pairMode = !pairMode;
-        stepRow.setVisibility(pairMode ? View.GONE : View.VISIBLE);
+        ladderRow.setVisibility(pairMode ? View.GONE : View.VISIBLE);
         pairRow.setVisibility(pairMode ? View.VISIBLE : View.GONE);
         pairModeButton.setText(pairMode ? R.string.hdr_test_mode_ladder : R.string.hdr_test_mode_pair);
 
         if (pairMode) {
-            stopPlayback();
-            surfaceViewB.setVisibility(View.VISIBLE);
+            stopLadder();
+            paneA.close();
+            paneB.close();
+            paneB.view.setVisibility(View.VISIBLE);
+
             levelLo = 0;
             levelHi = LEVEL_COUNT - 1;
             pairSteps = 0;
             pairPeakNits = 0;
-            showNextPair();
+            showBounds();
         }
         else {
+            paneB.view.setVisibility(View.GONE);
+            paneA.close();
+            paneB.close();
             pairStatus.setText("");
-            surfaceViewB.setVisibility(View.GONE);
-            startPlayback();
+            startLadder();
         }
     }
 
-    /**
-     * Bisect the level range in log space by bisecting the indices, since the levels are
-     * log-spaced. The two panes show the current bounds; "can tell them apart" means the
-     * lower one is still below the ceiling, so the lower bound moves up, and vice versa.
-     */
-    private void showNextPair() {
+    /** Draw the current bounds; converge when only neighbours are left. */
+    private void showBounds() {
         if (levelHi - levelLo <= 1) {
-            finishPairSearch();
+            finishSearch();
             return;
         }
         pairSteps++;
-        double loNits = levelNits(levelLo);
-        double hiNits = levelNits(levelHi);
-        pairStatus.setText(getString(R.string.hdr_test_pair_progress, pairSteps,
-                Math.round(loNits), Math.round(hiNits)));
-        renderLevel(surfaceView, levelLo);
-        renderLevel(surfaceViewB, levelHi);
+        int loNits = (int) Math.round(levelNits(levelLo));
+        int hiNits = (int) Math.round(levelNits(levelHi));
+        pairStatus.setText(getString(R.string.hdr_test_pair_progress, pairSteps, loNits, hiNits));
+        renderLevel(paneA, levelLo);
+        renderLevel(paneB, levelHi);
     }
 
     private void answerPair(boolean different) {
@@ -237,132 +259,152 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         else {
             levelHi = mid;
         }
-        showNextPair();
+        showBounds();
     }
 
-    private void finishPairSearch() {
+    private void finishSearch() {
         pairPeakNits = Math.sqrt(levelNits(levelLo) * levelNits(levelHi));
         pairStatus.setText(getString(R.string.hdr_test_pair_result,
                 Math.round(pairPeakNits),
-                Math.round(levelNits(levelLo)), Math.round(levelNits(levelHi))));
-        pairStatus.setTextColor(Color.WHITE);
+                Math.round(levelNits(levelLo)),
+                Math.round(levelNits(levelHi))));
     }
 
-    /** Level i's luminance: log-spaced between the clip's first and last step. */
+    /** Level i's luminance: log-spaced across the clip's range. */
     private static double levelNits(int index) {
         double t = (double) index / (LEVEL_COUNT - 1);
         return LEVEL_MIN_NITS * Math.pow(LEVEL_MAX_NITS / LEVEL_MIN_NITS, t);
     }
 
-    /** Seek to one level and freeze it on the given pane. */
-    private void renderLevel(SurfaceView target, int index) {
-        final int segment = index;
-        new Thread(() -> {
-            MediaExtractor extractor = new MediaExtractor();
-            MediaCodec codec = null;
-            try {
-                AssetFileDescriptor afd = getAssets().openFd(LEVEL_CLIP);
-                extractor.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
-                afd.close();
+    /** Open the level clip on a pane once, then reuse it: configure is the fragile step. */
+    private boolean ensurePane(Pane pane) {
+        if (pane.codec != null) {
+            return true;
+        }
+        if (!pane.hasSurface()) {
+            return false;
+        }
+        MediaExtractor extractor = new MediaExtractor();
+        try {
+            AssetFileDescriptor afd = getAssets().openFd(LEVEL_CLIP);
+            extractor.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+            afd.close();
 
-                int track = -1;
-                MediaFormat format = null;
-                for (int i = 0; i < extractor.getTrackCount(); i++) {
-                    MediaFormat candidate = extractor.getTrackFormat(i);
-                    String mime = candidate.getString(MediaFormat.KEY_MIME);
-                    if (mime != null && mime.startsWith("video/")) {
-                        track = i;
-                        format = candidate;
-                        break;
-                    }
-                }
-                if (format == null) {
-                    postError("no video track in " + LEVEL_CLIP);
-                    return;
-                }
-                extractor.selectTrack(track);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    format.setInteger(MediaFormat.KEY_COLOR_RANGE, MediaFormat.COLOR_RANGE_FULL);
-                }
-
-                if (format.containsKey(MediaFormat.KEY_DURATION)) {
-                    long durationUs = format.getLong(MediaFormat.KEY_DURATION);
-                    if (durationUs > 0) {
-                        // Trust the file over the constant: a wrong segment length would seek
-                        // past the end and leave the previous frame on screen with no error.
-                        levelSegmentUs = durationUs / LEVEL_COUNT;
-                    }
-                }
-                long seekUs = Math.min(segment * levelSegmentUs,
-                        Math.max(0, levelSegmentUs * LEVEL_COUNT - 1));
-                extractor.seekTo(seekUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
-
-                if (target.getHolder().getSurface() == null
-                        || !target.getHolder().getSurface().isValid()) {
-                    postError("surface not ready");
-                    return;
-                }
-
-                codec = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME));
-                configureWithRetry(codec, format, target);
-                codec.start();
-
-                MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
-                boolean fed = false;
-                long deadline = SystemClock.elapsedRealtime() + 3000;
-
-                while (SystemClock.elapsedRealtime() < deadline) {
-                    if (!fed) {
-                        int inIndex = codec.dequeueInputBuffer(10_000);
-                        if (inIndex >= 0) {
-                            ByteBuffer buffer = codec.getInputBuffer(inIndex);
-                            int size = buffer == null ? -1 : extractor.readSampleData(buffer, 0);
-                            if (size < 0) {
-                                codec.queueInputBuffer(inIndex, 0, 0, 0,
-                                        MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-                                break;
-                            }
-                            codec.queueInputBuffer(inIndex, 0, size, extractor.getSampleTime(), 0);
-                            extractor.advance();
-                            fed = true;
-                        }
-                    }
-                    int outIndex = codec.dequeueOutputBuffer(info, 10_000);
-                    if (outIndex >= 0) {
-                        // Frames before the target come from the keyframe the seek landed on.
-                        boolean reached = info.presentationTimeUs >= seekUs - 1;
-                        codec.releaseOutputBuffer(outIndex, reached);
-                        if (reached) {
-                            break;
-                        }
-                        fed = false;
-                    }
+            int track = -1;
+            MediaFormat format = null;
+            for (int i = 0; i < extractor.getTrackCount(); i++) {
+                MediaFormat candidate = extractor.getTrackFormat(i);
+                String mime = candidate.getString(MediaFormat.KEY_MIME);
+                if (mime != null && mime.startsWith("video/")) {
+                    track = i;
+                    format = candidate;
+                    break;
                 }
             }
-            catch (IOException | RuntimeException e) {
-                postError(e.getClass().getSimpleName() + ": " + e.getMessage());
-            }
-            finally {
-                if (codec != null) {
-                    try {
-                        codec.stop();
-                    }
-                    catch (RuntimeException ignored) {
-                    }
-                    codec.release();
-                }
+            if (format == null) {
                 extractor.release();
+                postError("no video track");
+                return false;
             }
-        }, "hdr-level-seek").start();
+            extractor.selectTrack(track);
+
+            if (format.containsKey(MediaFormat.KEY_DURATION)) {
+                long durationUs = format.getLong(MediaFormat.KEY_DURATION);
+                if (durationUs > 0) {
+                    pane.segmentUs = durationUs / LEVEL_COUNT;
+                }
+            }
+            String mime = format.getString(MediaFormat.KEY_MIME);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                format.setInteger(MediaFormat.KEY_COLOR_RANGE, MediaFormat.COLOR_RANGE_FULL);
+            }
+
+            MediaCodec codec = MediaCodec.createDecoderByType(mime);
+            codec.configure(format, pane.view.getHolder().getSurface(), null, 0);
+            codec.start();
+
+            pane.extractor = extractor;
+            pane.codec = codec;
+            return true;
+        }
+        catch (IOException | RuntimeException e) {
+            extractor.release();
+            reportFailure("open", e);
+            return false;
+        }
     }
 
-    // ---- ladder playback ---------------------------------------------------
+    /** Seek to one level and render exactly that frame, on the renderer thread. */
+    private void renderLevel(Pane pane, final int index) {
+        renderer.execute(() -> renderLevelNow(pane, index));
+    }
+
+    private void renderLevelNow(Pane pane, int index) {
+        // A SurfaceView that just became visible has no Surface for a frame or two.
+        long surfaceDeadline = SystemClock.elapsedRealtime() + 1500;
+        while (!pane.hasSurface() && SystemClock.elapsedRealtime() < surfaceDeadline) {
+            SystemClock.sleep(50);
+        }
+        if (!ensurePane(pane)) {
+            return;
+        }
+        MediaCodec codec = pane.codec;
+        MediaExtractor extractor = pane.extractor;
+        if (codec == null || extractor == null) {
+            return;
+        }
+
+        long target = Math.min(index * pane.segmentUs,
+                Math.max(0, pane.segmentUs * LEVEL_COUNT - 1));
+        try {
+            extractor.seekTo(target, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+            codec.flush();
+
+            MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
+            long deadline = SystemClock.elapsedRealtime() + 2000;
+            boolean fed = false;
+
+            while (SystemClock.elapsedRealtime() < deadline) {
+                if (!fed) {
+                    int inIndex = codec.dequeueInputBuffer(10_000);
+                    if (inIndex >= 0) {
+                        ByteBuffer buffer = codec.getInputBuffer(inIndex);
+                        int size = buffer == null ? -1 : extractor.readSampleData(buffer, 0);
+                        if (size < 0) {
+                            return;
+                        }
+                        codec.queueInputBuffer(inIndex, 0, size, extractor.getSampleTime(), 0);
+                        extractor.advance();
+                        fed = true;
+                    }
+                }
+                int outIndex = codec.dequeueOutputBuffer(info, 10_000);
+                if (outIndex >= 0) {
+                    boolean reached = info.presentationTimeUs >= target - 1;
+                    codec.releaseOutputBuffer(outIndex, reached);
+                    if (reached) {
+                        return;
+                    }
+                    fed = false;
+                }
+            }
+            reportFailure("seek to " + index, new IllegalStateException("no frame within 2s"));
+        }
+        catch (RuntimeException e) {
+            pane.close();
+            reportFailure("render " + index, e);
+        }
+    }
+
+    // ---- ladder mode -------------------------------------------------------
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
-        surfaceReady = true;
-        if (!pairMode) {
-            startPlayback();
+        if (pairMode) {
+            return;  // pair mode draws on demand
+        }
+        if (holder.getSurface() == paneA.view.getHolder().getSurface()) {
+            startLadder();
         }
     }
 
@@ -372,23 +414,24 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
-        surfaceReady = false;
-        stopPlayback();
+        stopLadder();
+        paneA.close();
+        paneB.close();
     }
 
-    private void startPlayback() {
-        stopPlayback();
+    private void startLadder() {
+        stopLadder();
         final String clip = pendingClip;
         running = true;
-        decodeThread = new Thread(() -> decodeLoop(clip), "hdr-test-decode");
-        decodeThread.start();
+        ladderThread = new Thread(() -> decodeLadder(clip), "hdr-ladder");
+        ladderThread.start();
         handler.post(sampler);
     }
 
-    private void stopPlayback() {
+    private void stopLadder() {
         running = false;
-        Thread thread = decodeThread;
-        decodeThread = null;
+        Thread thread = ladderThread;
+        ladderThread = null;
         if (thread != null) {
             try {
                 thread.join(1500);
@@ -400,7 +443,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         handler.removeCallbacks(sampler);
     }
 
-    private void decodeLoop(String asset) {
+    private void decodeLadder(String asset) {
         MediaExtractor extractor = new MediaExtractor();
         MediaCodec codec = null;
         try {
@@ -420,7 +463,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
                 }
             }
             if (format == null) {
-                postError("no video track in " + asset);
+                postError("no video track");
                 return;
             }
             extractor.selectTrack(track);
@@ -429,7 +472,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
             }
 
             codec = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME));
-            codec.configure(format, surfaceView.getHolder().getSurface(), null, 0);
+            codec.configure(format, paneA.view.getHolder().getSurface(), null, 0);
             codec.start();
 
             MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
@@ -458,21 +501,18 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
                 int outIndex = codec.dequeueOutputBuffer(info, 10_000);
                 if (outIndex >= 0) {
                     boolean eos = (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
-
                     if (firstPts < 0) {
                         firstPts = info.presentationTimeUs;
                         firstWall = SystemClock.elapsedRealtime();
                     }
                     else if (info.presentationTimeUs > firstPts) {
-                        long target = firstWall + (info.presentationTimeUs - firstPts) / 1000;
-                        long wait = target - SystemClock.elapsedRealtime();
+                        long due = firstWall + (info.presentationTimeUs - firstPts) / 1000;
+                        long wait = due - SystemClock.elapsedRealtime();
                         if (wait > 0 && wait < 1000) {
                             SystemClock.sleep(wait);
                         }
                     }
-
                     codec.releaseOutputBuffer(outIndex, true);
-
                     if (eos) {
                         codec.flush();
                         extractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
@@ -483,7 +523,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
             }
         }
         catch (IOException | RuntimeException e) {
-            postError(String.valueOf(e.getMessage()));
+            reportFailure("ladder", e);
         }
         finally {
             if (codec != null) {
@@ -498,28 +538,32 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         }
     }
 
-    /**
-     * A Surface accepts one rendering codec at a time, and the previous one is released on a
-     * different thread. Retry once instead of failing the whole comparison.
-     */
-    private void configureWithRetry(MediaCodec codec, MediaFormat format, SurfaceView target)
-            throws IOException {
-        try {
-            codec.configure(format, target.getHolder().getSurface(), null, 0);
+    // ---- diagnostics -------------------------------------------------------
+
+    private void reportFailure(String stage, Throwable error) {
+        StringBuilder sb = new StringBuilder();
+        for (StackTraceElement element : error.getStackTrace()) {
+            sb.append(element.toString()).append('\n');
+            if (sb.length() > 600) {
+                break;
+            }
         }
-        catch (IllegalStateException first) {
-            SystemClock.sleep(200);
-            codec.reset();
-            codec.configure(format, target.getHolder().getSurface(), null, 0);
-        }
+        LimeLog.severe("HDR test " + stage + " failed: " + error + "\n" + sb);
+        postError(stage + ": " + error.getClass().getSimpleName()
+                + (error.getMessage() == null ? "" : " " + error.getMessage()));
     }
 
     private void postError(String message) {
-        handler.post(() -> Toast.makeText(this,
-                getString(R.string.hdr_test_play_error, message), Toast.LENGTH_LONG).show());
+        // Persistent, not just a toast: the next person to hit this needs to be able to read
+        // the text without adb, and a toast disappears in two seconds.
+        handler.post(() -> {
+            hintView.setText(getString(R.string.hdr_test_play_error, message));
+            hintView.setTextColor(Color.parseColor("#FF6E6E"));
+            Toast.makeText(this, getString(R.string.hdr_test_play_error, message),
+                    Toast.LENGTH_LONG).show();
+        });
     }
 
-    /** What the system is doing right now: this is what makes a run trustworthy or not. */
     private void updateInfo() {
         Display display = getWindowManager().getDefaultDisplay();
         StringBuilder sb = new StringBuilder();
@@ -528,8 +572,6 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         sb.append(getString(R.string.hdr_test_info_hdr,
                 getString(hdr ? R.string.common_yes : R.string.common_no)));
 
-        // Display.getBrightnessInfo() and BrightnessInfo are @hide: read reflectively, skipped
-        // when unavailable. Losing this line does not invalidate a run.
         try {
             Object info = Display.class.getMethod("getBrightnessInfo").invoke(display);
             if (info != null) {
@@ -562,7 +604,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         }
         else {
             hintView.setText(pairMode ? R.string.hdr_test_pair_hint : R.string.hdr_test_hint);
-            hintView.setTextColor(Color.WHITE);
+            hintView.setTextColor(Color.parseColor("#C0FFFFFF"));
         }
     }
 
@@ -597,14 +639,16 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     @Override
     protected void onPause() {
         super.onPause();
-        stopPlayback();
+        stopLadder();
+        paneA.close();
+        paneB.close();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (surfaceReady && !pairMode) {
-            startPlayback();
+        if (!pairMode && paneA.hasSurface()) {
+            startLadder();
         }
     }
 }

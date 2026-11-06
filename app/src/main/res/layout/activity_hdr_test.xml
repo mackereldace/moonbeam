@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- HDR test: the ladder fills the screen, the controls sit on a translucent strip so the
-     patches above stay unobstructed. -->
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- HDR test: two panes on top, controls underneath in their own solid strip. Nothing is
+     drawn over the patches, which is the whole point of the screen. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="@android:color/black">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:orientation="horizontal">
 
         <SurfaceView
@@ -28,140 +30,143 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
         android:orientation="vertical"
-        android:background="#CC000000"
+        android:background="#FF0E0E0E"
         android:paddingStart="12dp"
         android:paddingEnd="12dp"
-        android:paddingTop="10dp"
-        android:paddingBottom="12dp">
+        android:paddingTop="8dp"
+        android:paddingBottom="10dp">
 
         <TextView
             android:id="@+id/hdrInfo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="#B0FFFFFF"
-            android:textSize="11sp"
-            android:maxLines="2" />
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/hdrPairStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@android:color/white"
+            android:textSize="15sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/hdrHint"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="#C0FFFFFF"
+            android:textSize="12sp" />
+
+        <LinearLayout
+            android:id="@+id/hdrLadderRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:textColor="@android:color/white"
-            android:textSize="13sp" />
+            android:orientation="vertical">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/hdrLayoutA"
-                style="?android:attr/buttonStyleSmall"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/hdr_test_layout_a" />
-
-            <Button
-                android:id="@+id/hdrLayoutB"
-                style="?android:attr/buttonStyleSmall"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/hdr_test_layout_b" />
-
-            <Button
-                android:id="@+id/hdrLayoutC"
-                style="?android:attr/buttonStyleSmall"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/hdr_test_layout_c" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/hdrPairMode"
-                style="?android:attr/buttonStyleSmall"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/hdr_test_mode_pair" />
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/hdrLayoutA"
+                    style="?android:attr/buttonStyleSmall"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="@android:color/white"
+                    android:text="@string/hdr_test_layout_a" />
+
+                <Button
+                    android:id="@+id/hdrLayoutB"
+                    style="?android:attr/buttonStyleSmall"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="@android:color/white"
+                    android:text="@string/hdr_test_layout_b" />
+
+                <Button
+                    android:id="@+id/hdrLayoutC"
+                    style="?android:attr/buttonStyleSmall"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="@android:color/white"
+                    android:text="@string/hdr_test_layout_c" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/hdrSteps"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/hdrPairRow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:orientation="vertical"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal"
             android:visibility="gone">
 
-            <TextView
-                android:id="@+id/hdrPairStatus"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@android:color/white"
-                android:textSize="13sp" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/hdrPairDiff"
-                    style="?android:attr/buttonStyleSmall"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/hdr_test_pair_diff" />
-
-                <Button
-                    android:id="@+id/hdrPairSame"
-                    style="?android:attr/buttonStyleSmall"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/hdr_test_pair_same" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/hdrSteps"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:orientation="horizontal" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal">
-
             <Button
-                android:id="@+id/hdrSave"
+                android:id="@+id/hdrPairDiff"
+                style="?android:attr/buttonStyleSmall"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:textColor="@android:color/white"
+                android:text="@string/hdr_test_pair_diff" />
+
+            <Button
+                android:id="@+id/hdrPairSame"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@android:color/white"
+                android:text="@string/hdr_test_pair_same" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/hdrPairMode"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@android:color/white"
+                android:text="@string/hdr_test_mode_pair" />
+
+            <Button
+                android:id="@+id/hdrSave"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@android:color/white"
                 android:text="@string/hdr_test_save" />
 
             <Button
                 android:id="@+id/hdrClose"
+                style="?android:attr/buttonStyleSmall"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:textColor="@android:color/white"
                 android:text="@string/hdr_test_close" />
         </LinearLayout>
     </LinearLayout>
-</FrameLayout>
+</LinearLayout>
