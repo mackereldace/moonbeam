@@ -21,9 +21,10 @@ android {
         // 0.4.2  去掉二级"高级设置"页（弹窗遮状态栏），六分类扁平化，画面以 HDR 打头
         // 0.4.3  画面收纳 HDR 配置：亮度报告 + 手动峰值，开机探测并随 launch 上报
         // 0.4.4  亮度报告摘要分三行；设置页剩余英文全部资源化（含备份导入对话框）
+        // 0.4.5  输入栏按触控/屏幕控件/手柄分段；一批含义不清的标题与说明重写
         // 1.0.0  首个正式版
-        versionName "0.4.4"
-        versionCode = 404
+        versionName "0.4.5"
+        versionCode = 405
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'

@@ -144,6 +144,9 @@
     <string name="addpc_wrong_sitelocal">That address doesn\'t look right. You must use your router\'s public IP address for streaming over the Internet.</string>
 
     <!-- Preferences -->
+    <string name="section_input_gamepad">Gamepad</string>
+    <string name="section_input_onscreen">On-screen controls</string>
+    <string name="section_input_touch">Touch &amp; mouse</string>
 
     <string name="title_restore_vplus_backup">Restore V+ backup</string>
     <string name="summary_restore_vplus_backup">Import settings and paired PCs from a Moonlight V+ backup file</string>
@@ -222,44 +225,44 @@
     <string name="summary_checkbox_enable_audiofx">Allows audio effects to function while streaming, but may increase audio latency</string>
 
     <string name="category_gamepad_settings">Gamepad Settings</string>
-    <string name="title_checkbox_multi_controller">Automatic gamepad presence detection</string>
-    <string name="summary_checkbox_multi_controller">Unchecking this option forces a gamepad to always be present</string>
-    <string name="title_checkbox_vibrate_fallback">Emulate rumble support with vibration</string>
+    <string name="title_checkbox_multi_controller">Each gamepad is its own player</string>
+    <string name="summary_checkbox_multi_controller">On: every connected gamepad appears as a separate player on the host. Off: they are all merged into one.</string>
+    <string name="title_checkbox_vibrate_fallback">Vibrate the phone instead of the pad</string>
     <string name="summary_checkbox_vibrate_fallback">Vibrates your device to emulate rumble if your gamepad does not support it</string>
-    <string name="title_seekbar_vibrate_fallback_strength">Adjust emulated rumble intensity</string>
+    <string name="title_seekbar_vibrate_fallback_strength">Simulated rumble strength</string>
     <string name="summary_seekbar_vibrate_fallback_strength">Amplify or reduce the vibration intensity on your device</string>
     <string name="suffix_seekbar_vibrate_fallback_strength">%</string>
     <string name="title_seekbar_deadzone">Adjust analog stick deadzone</string>
-    <string name="summary_seekbar_deadzone">Note: Some games can enforce a larger deadzone than what Moonlight is configured to use.</string>
+    <string name="summary_seekbar_deadzone">A worn stick drifts around centre; the dead zone ignores that little offset. Larger suppresses drift but feels duller, and a game\'s own dead zone may be bigger than this one.</string>
     <string name="suffix_seekbar_deadzone">%</string>
-    <string name="title_checkbox_xb1_driver">Xbox 360/One USB gamepad driver</string>
-    <string name="summary_checkbox_xb1_driver">Enables a built-in USB driver for devices without native Xbox controller support</string>
-    <string name="title_checkbox_usb_bind_all">Override native Xbox gamepad support</string>
-    <string name="summary_checkbox_usb_bind_all">Use Moonlight\'s USB driver for all supported gamepads, even if native Xbox controller support is present</string>
-    <string name="title_checkbox_mouse_emulation">Mouse emulation via gamepad</string>
-    <string name="summary_checkbox_mouse_emulation">Long pressing the Start button will switch the gamepad into mouse mode</string>
-    <string name="title_checkbox_flip_face_buttons">Flip face buttons</string>
-    <string name="summary_checkbox_flip_face_buttons">Switches the face buttons A/B and X/Y for gamepads and the on-screen controls</string>
-    <string name="title_checkbox_gamepad_touchpad_as_mouse">Always control mouse with touchpad</string>
-    <string name="summary_checkbox_gamepad_touchpad_as_mouse">Forces gamepad touchpad input to control the host mouse, even when emulating a gamepad with a touchpad.</string>
-    <string name="title_checkbox_gamepad_motion_sensors">Allow use of gamepad motion sensors</string>
-    <string name="summary_checkbox_gamepad_motion_sensors">Enables supported hosts to request motion sensor data when emulating a gamepad with motion sensors. Disabling may slightly reduce power and network usage if motion sensors are not being used in game.</string>
-    <string name="title_checkbox_gamepad_motion_fallback">Emulate gamepad motion sensor support</string>
-    <string name="summary_checkbox_gamepad_motion_fallback">Uses your device\'s built-in motion sensors if gamepad sensors are not supported by your connected gamepad or your Android version.\nNote: Enabling this option may cause your gamepad to appear as a PlayStation controller on the host.</string>
+    <string name="title_checkbox_xb1_driver">Built-in Xbox gamepad driver</string>
+    <string name="summary_checkbox_xb1_driver">Hand Xbox 360/One pads to the app\'s own driver. Use it on devices whose system support for them is broken.</string>
+    <string name="title_checkbox_usb_bind_all">Built-in driver takes every Xbox pad</string>
+    <string name="summary_checkbox_usb_bind_all">Ignore the system driver: every supported Xbox gamepad is routed through the app instead.</string>
+    <string name="title_checkbox_mouse_emulation">Control the mouse with a gamepad</string>
+    <string name="summary_checkbox_mouse_emulation">Hold Start on a physical gamepad to switch it into mouse mode.</string>
+    <string name="title_checkbox_flip_face_buttons">Swap A/B and X/Y</string>
+    <string name="summary_checkbox_flip_face_buttons">Applies to physical gamepads and the on-screen controller alike.</string>
+    <string name="title_checkbox_gamepad_touchpad_as_mouse">Gamepad touchpad always drives the mouse</string>
+    <string name="summary_checkbox_gamepad_touchpad_as_mouse">Even when a game is using the touchpad, force it to move the host cursor.</string>
+    <string name="title_checkbox_gamepad_motion_sensors">Let the host read pad motion</string>
+    <string name="summary_checkbox_gamepad_motion_sensors">Let the host ask the pad for motion data. Turn it off when the game does not use motion - it saves a little power and bandwidth.</string>
+    <string name="title_checkbox_gamepad_motion_fallback">Use phone motion when the pad has none</string>
+    <string name="summary_checkbox_gamepad_motion_fallback">Use the phone\'s own sensors when the pad or this Android version has none. Note: the host may then identify the pad as a PS4 controller.</string>
 
     <string name="category_input_settings">Input Settings</string>
     <string name="title_checkbox_touchscreen_trackpad">Use the touchscreen as a trackpad</string>
-    <string name="summary_checkbox_touchscreen_trackpad">If enabled, the touchscreen acts like a trackpad. If disabled, the touchscreen directly controls the mouse cursor.</string>
-    <string name="title_checkbox_absolute_mouse_mode">Remote desktop mouse mode</string>
-    <string name="summary_checkbox_absolute_mouse_mode">This can make mouse acceleration behave more naturally for remote desktop usage, but it is incompatible with many games.</string>
-    <string name="title_checkbox_mouse_nav_buttons">Enable back and forward mouse buttons</string>
-    <string name="summary_checkbox_mouse_nav_buttons">Enabling this option may break right clicking on some buggy devices</string>
+    <string name="summary_checkbox_touchscreen_trackpad">On: dragging on the screen moves the cursor relatively, like a laptop trackpad. Off: the cursor jumps to wherever you tap.</string>
+    <string name="title_checkbox_absolute_mouse_mode">Absolute mouse (desktop use)</string>
+    <string name="summary_checkbox_absolute_mouse_mode">The cursor maps to a position on screen, which suits desktop work and remote windows. Most games behave badly with it, so keep it off for gaming.</string>
+    <string name="title_checkbox_mouse_nav_buttons">Mouse side buttons</string>
+    <string name="summary_checkbox_mouse_nav_buttons">Send the mouse\'s side buttons (back/forward) to the PC. On some devices this makes right-click stop working; leave it off there.</string>
 
     <string name="category_on_screen_controls_settings">On-screen Controls Settings</string>
-    <string name="title_checkbox_show_onscreen_controls">Show on-screen controls</string>
+    <string name="title_checkbox_show_onscreen_controls">Show on-screen buttons</string>
     <string name="summary_checkbox_show_onscreen_controls">Show virtual controller overlay on touchscreen</string>
-    <string name="title_checkbox_vibrate_osc">Enable vibration</string>
-    <string name="summary_checkbox_vibrate_osc">Vibrates your device to emulate rumble for the on-screen controls</string>
+    <string name="title_checkbox_vibrate_osc">Vibrate for on-screen controls</string>
+    <string name="summary_checkbox_vibrate_osc">Use the phone\'s motor to give the on-screen buttons feedback.</string>
     <string name="title_only_l3r3">Only show L3 and R3</string>
     <string name="summary_only_l3r3">Hide all virtual buttons except L3 and R3</string>
     <string name="title_show_guide_button">Show Guide Button</string>
@@ -270,8 +273,8 @@
     <string name="dialog_text_reset_osc">Are you sure you want to delete your saved on-screen controls layout?</string>
     <string name="toast_reset_osc_success">On-screen controls reset to default</string>
     <string name="title_osc_opacity">Change opacity of on-screen controls</string>
-    <string name="summary_osc_opacity">Make the on-screen controls more/less transparent</string>
-    <string name="dialog_title_osc_opacity">Change opacity</string>
+    <string name="summary_osc_opacity">How solid the on-screen buttons look. 0 is fully transparent: still tappable, but invisible.</string>
+    <string name="dialog_title_osc_opacity">Opacity</string>
     <string name="suffix_osc_opacity">%</string>
 
     <string name="category_ui_settings">UI Settings</string>
@@ -351,8 +354,8 @@
     <string name="pacing_balanced_alt">Balanced with FPS limit</string>
     <string name="pacing_smoothness">Prefer smoothest video (may significantly increase latency)</string>
 
-    <string name="title_analog_scrolling">Use an analog stick to scroll</string>
-    <string name="summary_analog_scrolling">Select an analog stick to scroll when in mouse emulation mode</string>
+    <string name="title_analog_scrolling">Stick used for scrolling</string>
+    <string name="summary_analog_scrolling">In mouse mode, which stick scrolls the page.</string>
     <string name="analogscroll_none">None (both sticks move the mouse)</string>
     <string name="analogscroll_right">Right analog stick</string>
     <string name="analogscroll_left">Left analog stick</string>

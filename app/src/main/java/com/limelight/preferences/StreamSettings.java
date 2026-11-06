@@ -833,6 +833,36 @@ public class StreamSettings extends Activity {
         };
 
         /**
+         * Section labels inside a category, inserted immediately before the anchor row.
+         *
+         * Columns: category index, anchor preference key, title. A label only appears when its
+         * anchor survived the capability checks, so a device without a touchscreen does not get
+         * an "on-screen controls" heading with nothing under it.
+         *
+         * A nested PreferenceCategory would be the obvious way to do this, but the framework
+         * flattens those, and a nested PreferenceScreen is what broke the status bar in 0.4.1.
+         * A plain non-selectable Preference with its own layout avoids both.
+         */
+        private static final String[][] SECTION_HEADERS = {
+                {"3", "checkbox_touchscreen_trackpad", "section_input_touch"},
+                {"3", "checkbox_show_onscreen_controls", "section_input_onscreen"},
+                {"3", "seekbar_deadzone", "section_input_gamepad"},
+        };
+
+        private static int sectionTitleRes(String name) {
+            switch (name) {
+                case "section_input_touch":
+                    return R.string.section_input_touch;
+                case "section_input_onscreen":
+                    return R.string.section_input_onscreen;
+                case "section_input_gamepad":
+                    return R.string.section_input_gamepad;
+                default:
+                    return 0;
+            }
+        }
+
+        /**
          * Rebuild the inflated preference screen as six flat categories.
          *
          * The XML stays the single source of truth for every preference, its key and its
@@ -886,6 +916,19 @@ public class StreamSettings extends Activity {
                 }
 
                 int categoryIndex = Integer.parseInt(row[1]);
+
+                // A section label sits right before its anchor row.
+                for (String[] header : SECTION_HEADERS) {
+                    if (Integer.parseInt(header[0]) == categoryIndex && header[1].equals(row[0])) {
+                        Preference label = new Preference(screen.getContext());
+                        label.setLayoutResource(R.layout.preference_section_header);
+                        label.setSelectable(false);
+                        label.setTitle(sectionTitleRes(header[2]));
+                        label.setOrder(nextOrder[categoryIndex]++);
+                        categories[categoryIndex].addPreference(label);
+                    }
+                }
+
                 PreferenceGroup parent = preference.getParent();
                 if (parent != null) {
                     parent.removePreference(preference);
