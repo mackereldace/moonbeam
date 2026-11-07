@@ -61,7 +61,9 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private double guardDimNits;
     private RatioPlotView ratioPlot;
     private int ticks;
-    private float ratioHigh;
+    private long ratioRecentAt;
+    private float ratioHigh;       // what the platform says it could reach
+    private float ratioRecent;     // highest value in the last minute: the current plateau
     private float ratioBaseline;
     private int dropSamples;
     private boolean dropRecorded;
@@ -666,14 +668,22 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         else if (ratio > ratioHigh) {
             ratioHigh = ratio;
         }
+        // Compression is judged against the recent plateau, not against the platform ceiling:
+        // the ceiling may only be reachable in bright ambient light, and comparing an indoor
+        // reading with a sunlight reading would report compression that is not happening.
+        long now = SystemClock.elapsedRealtime();
+        if (ratio > ratioRecent || now - ratioRecentAt > 60000) {
+            ratioRecent = ratio;
+            ratioRecentAt = now;
+        }
         if (ratio > 0f && ratioHigh > 0f) {
-            boolean compressed = ratio < ratioHigh * 0.98f;
+            boolean compressed = ratioRecent > 0f && ratio < ratioRecent * 0.98f;
             sb.append("  ·  ").append(getString(R.string.hdr_test_info_ratio_pair,
                     String.format(Locale.US, "%.2f", ratio),
                     String.format(Locale.US, "%.2f", ratioHigh)));
             if (compressed) {
                 sb.append("  ·  ").append(getString(R.string.hdr_test_compressed,
-                        String.format(Locale.US, "%.2f", ratio / ratioHigh)));
+                        String.format(Locale.US, "%.2f", ratio / ratioRecent)));
             }
             infoView.setTextColor(compressed ? Color.parseColor("#FFC46E")
                     : (hdr ? Color.parseColor("#66FFFFFF") : Color.parseColor("#FF6E6E")));
@@ -724,7 +734,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
             field = HdrProfileStore.FIELD_PEAK;
         }
         HdrProfileStore.set(this, slot, field, (float) peakNits);
-        if (ratioHigh > 0f && currentRatio() < ratioHigh * 0.98f) {
+        if (ratioRecent > 0f && currentRatio() < ratioRecent * 0.98f) {
             Toast.makeText(this, R.string.hdr_test_saved_compressed, Toast.LENGTH_LONG).show();
         }
 

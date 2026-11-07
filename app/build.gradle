@@ -58,9 +58,10 @@ android {
         // 0.7.15 曲线上不再写任何文字（比值已在显示内容里），只保留形状
         // 0.7.16 状态行显示 当前/最高 比值；系统开始压缩时转琥珀色并标明测量不可信
         // 0.7.17 最高比值改用 getHighestHdrSdrRatio（API 36），不再靠“见过的最大值”猜
+        // 0.7.18 压缩判定改用近 60 秒的平台值，避免拿室内读数与阳光下的上限比较造成误报
         // 1.0.0  首个正式版
-        versionName "0.7.17"
-        versionCode = 717
+        versionName "0.7.18"
+        versionCode = 718
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'
