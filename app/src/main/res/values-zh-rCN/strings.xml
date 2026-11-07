@@ -104,6 +104,10 @@
     <string name="addpc_enter_ip">请输入一个IP地址</string>
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
+
+    <string name="hdr_test_info_ratio_pair">HDR/SDR %1$s / %2$s</string>
+    <string name="hdr_test_compressed">已压缩 ×%1$s，此时测的是压缩后的值</string>
+    <string name="hdr_test_saved_compressed">已保存，但系统当前在压缩——这个值描述的是压缩，不是面板</string>
     <string name="hdr_test_dropped">已于 %1$s 开始下降 · 已写入槽位</string>
     <string name="hdr_test_guard_ratio">比值 %1$s→%2$s（最低 %3$s）</string>
 

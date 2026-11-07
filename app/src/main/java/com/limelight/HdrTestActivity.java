@@ -61,6 +61,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private double guardDimNits;
     private RatioPlotView ratioPlot;
     private int ticks;
+    private float ratioHigh;
     private float ratioBaseline;
     private int dropSamples;
     private boolean dropRecorded;
@@ -639,8 +640,30 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
             catch (RuntimeException ignored) {
             }
         }
+        // Track the best ratio seen: the system compresses the whole HDR range once it reduces
+        // headroom, and a compressed range still separates two patches, so a measurement taken
+        // then describes the compression, not the panel.
+        float ratio = currentRatio();
+        if (ratio > ratioHigh) {
+            ratioHigh = ratio;
+        }
+        if (ratio > 0f && ratioHigh > 0f) {
+            boolean compressed = ratio < ratioHigh * 0.98f;
+            sb.append("  ·  ").append(getString(R.string.hdr_test_info_ratio_pair,
+                    String.format(Locale.US, "%.2f", ratio),
+                    String.format(Locale.US, "%.2f", ratioHigh)));
+            if (compressed) {
+                sb.append("  ·  ").append(getString(R.string.hdr_test_compressed,
+                        String.format(Locale.US, "%.2f", ratio / ratioHigh)));
+            }
+            infoView.setTextColor(compressed ? Color.parseColor("#FFC46E")
+                    : (hdr ? Color.parseColor("#66FFFFFF") : Color.parseColor("#FF6E6E")));
+        }
+        else {
+            infoView.setTextColor(hdr ? Color.parseColor("#66FFFFFF") : Color.parseColor("#FF6E6E"));
+        }
+
         infoView.setText(sb.toString());
-        infoView.setTextColor(hdr ? Color.parseColor("#66FFFFFF") : Color.parseColor("#FF6E6E"));
     }
 
     /**
@@ -682,6 +705,9 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
             field = HdrProfileStore.FIELD_PEAK;
         }
         HdrProfileStore.set(this, slot, field, (float) peakNits);
+        if (ratioHigh > 0f && currentRatio() < ratioHigh * 0.98f) {
+            Toast.makeText(this, R.string.hdr_test_saved_compressed, Toast.LENGTH_LONG).show();
+        }
 
         Toast.makeText(this, getString(R.string.hdr_test_saved_slot,
                 formatNits(peakNits), slot + 1), Toast.LENGTH_LONG).show();

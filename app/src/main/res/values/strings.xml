@@ -144,6 +144,10 @@
     <string name="addpc_wrong_sitelocal">That address doesn\'t look right. You must use your router\'s public IP address for streaming over the Internet.</string>
 
     <!-- Preferences -->
+
+    <string name="hdr_test_info_ratio_pair">HDR/SDR %1$s / %2$s</string>
+    <string name="hdr_test_compressed">compressed ×%1$s, measurement describes the compression</string>
+    <string name="hdr_test_saved_compressed">Saved, but the system is compressing right now — this value describes the compression, not the panel</string>
     <string name="hdr_test_dropped">Dropped at %1$s · saved to the slot</string>
     <string name="hdr_test_guard_ratio">ratio %1$s→%2$s (min %3$s)</string>
 
