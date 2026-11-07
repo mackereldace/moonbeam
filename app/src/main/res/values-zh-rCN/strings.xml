@@ -104,6 +104,7 @@
     <string name="addpc_enter_ip">请输入一个IP地址</string>
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
+    <string name="hdr_test_wait_headroom">系统正在压缩 · 等比值回到 %1$s 再测</string>
     <string name="hdr_test_implied_white">按当前比值推算，SDR 白点 ≈ %1$d nit</string>
 
     <string name="hdr_test_info_ratio_pair">HDR/SDR %1$s / %2$s</string>
