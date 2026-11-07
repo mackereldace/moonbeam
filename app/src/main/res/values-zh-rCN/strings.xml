@@ -104,20 +104,20 @@
     <string name="addpc_enter_ip">请输入一个IP地址</string>
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
-    <string name="hdr_test_ladder_hint">八档 100 → 3200 nit，哪两档开始分不开，就是它停止变亮的地方。</string>
-    <string name="hdr_test_mode_measure">回到测量</string>
+    <string name="hdr_test_ladder_hint">八档 100 → 3200 nit</string>
+    <string name="hdr_test_mode_measure">测量</string>
 
-    <string name="hdr_test_question">左边那块更暗吗？</string>
+    <string name="hdr_test_question">左边更暗？</string>
     <string name="hdr_test_answer_dimmer">更暗</string>
     <string name="hdr_test_answer_same">一样亮</string>
-    <string name="hdr_test_values">左 %1$d nit · 右 %2$d nit</string>
-    <string name="hdr_test_progress">第 %1$d/%2$d 步 · 区间 %3$d–%4$d nit</string>
-    <string name="hdr_test_result">峰值 %1$d nit（区间 %2$d–%3$d）</string>
+    <string name="hdr_test_values">%1$d → %2$d nit</string>
+    <string name="hdr_test_progress">%1$d/%2$d · %3$d–%4$d</string>
+    <string name="hdr_test_result">峰值 %1$d nit · %2$d–%3$d</string>
     <string name="hdr_test_done">%1$d 步完成</string>
     <string name="hdr_test_finish_first">先答完这一轮</string>
 
     <string name="hdr_test_mode_pair">二分查找峰值</string>
-    <string name="hdr_test_mode_ladder">看阶梯</string>
+    <string name="hdr_test_mode_ladder">阶梯</string>
     <string name="hdr_test_pair_hint">右边永远满亮度，测点从 5000 起，约九步收敛到 1% 以内。</string>
     <string name="hdr_test_pair_diff">分得开</string>
     <string name="hdr_test_pair_same">一样</string>

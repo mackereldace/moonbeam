@@ -144,16 +144,16 @@
     <string name="addpc_wrong_sitelocal">That address doesn\'t look right. You must use your router\'s public IP address for streaming over the Internet.</string>
 
     <!-- Preferences -->
-    <string name="hdr_test_ladder_hint">Eight steps from 100 to 3200 nit. Where two steps stop separating is where the panel stops climbing.</string>
+    <string name="hdr_test_ladder_hint">100 → 3200 nit, eight steps</string>
     <string name="hdr_test_mode_measure">Measure</string>
 
-    <string name="hdr_test_question">Is the left field dimmer?</string>
+    <string name="hdr_test_question">Left dimmer?</string>
     <string name="hdr_test_answer_dimmer">Dimmer</string>
     <string name="hdr_test_answer_same">Same</string>
-    <string name="hdr_test_values">Left %1$d nit · right %2$d nit</string>
-    <string name="hdr_test_progress">Step %1$d of %2$d · range %3$d–%4$d nit</string>
-    <string name="hdr_test_result">Ceiling %1$d nit (range %2$d–%3$d)</string>
-    <string name="hdr_test_done">Done in %1$d steps</string>
+    <string name="hdr_test_values">%1$d → %2$d nit</string>
+    <string name="hdr_test_progress">%1$d/%2$d · %3$d–%4$d</string>
+    <string name="hdr_test_result">Peak %1$d nit · %2$d–%3$d</string>
+    <string name="hdr_test_done">%1$d steps</string>
     <string name="hdr_test_finish_first">Finish the search first</string>
 
     <string name="hdr_test_mode_pair">Binary search for the peak</string>
@@ -181,7 +181,7 @@
     <string name="hdr_test_layout_a">Bars</string>
     <string name="hdr_test_layout_b">Short bars</string>
     <string name="hdr_test_layout_c">One at a time</string>
-    <string name="hdr_test_save">Use it</string>
+    <string name="hdr_test_save">Use</string>
     <string name="hdr_test_close">Close</string>
     <string name="hdr_test_saved">Peak set to %1$d nit. Reconnect for it to take effect.</string>
     <string name="hdr_test_play_error">Cannot play the test clip: %1$s</string>
