@@ -107,11 +107,11 @@
 
     <string name="hdr_test_mode_pair">二分查找峰值</string>
     <string name="hdr_test_mode_ladder">回到阶梯</string>
-    <string name="hdr_test_pair_hint">左边是下限、右边是上限。分得开就抬高左边，分不开就压低右边。</string>
+    <string name="hdr_test_pair_hint">右边永远是满亮度。左边看得出比它暗吗？</string>
     <string name="hdr_test_pair_diff">分得开</string>
     <string name="hdr_test_pair_same">一样</string>
-    <string name="hdr_test_pair_progress">第 %1$d 步：%2$d 与 %3$d nit</string>
-    <string name="hdr_test_pair_result">峰值约 %1$d nit（区间 %2$d–%3$d）</string>
+    <string name="hdr_test_pair_progress">第 %1$d 步：%2$d nit 对比 %3$d</string>
+    <string name="hdr_test_pair_result">峰值约 %1$d nit（到 %2$d 就一样了）</string>
     <string name="hdr_test_pair_ceiling">超出量程，至少 %1$d nit</string>
 
     <string name="title_hdr_high_brightness">HDR 用屏幕最高亮度</string>

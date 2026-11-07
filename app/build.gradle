@@ -30,9 +30,10 @@ android {
         // 0.5.5  二分改为双画面 + 对数二分：100↔10000 nit 收敛到真峰值
         // 0.5.6  修二分渲染：档位片改全 I 帧 1fps，每块只开一次解码器，surface 就绪再画
         // 0.5.7  色块改为满宽条带，左右两块在中缝直接相接，便于直接比较
+        // 0.5.8  二分逻辑修正：右块固定满亮度，左块测点；得到"最后一个还看得出更暗"的亮度
         // 1.0.0  首个正式版
-        versionName "0.5.7"
-        versionCode = 507
+        versionName "0.5.8"
+        versionCode = 508
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'

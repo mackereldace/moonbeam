@@ -112,7 +112,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private int selectedIndex = STEPS_NITS.length - 1;
 
     private boolean pairMode;
-    private int levelLo, levelHi, pairSteps;
+    private int levelLo, levelHi, pairMid, pairSteps;
     private double pairPeakNits;
 
     /** One renderer thread: a Surface takes one codec at a time, and answers come in bursts. */
@@ -234,39 +234,50 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         }
     }
 
-    /** Draw the current bounds; converge when only neighbours are left. */
+    /**
+     * One test point against a fixed reference.
+     *
+     * The reference pane always shows the top level, which any panel clips to its own peak, so
+     * it is the brightest thing the screen can produce. The left pane shows the candidate, and
+     * the question is simply "does this look dimmer than the maximum?" - the answer is yes
+     * exactly while the candidate sits below the ceiling. Comparing the two bounds against each
+     * other, which is what this did before, carries no information: two levels below the peak
+     * always look different from each other.
+     */
     private void showBounds() {
         if (levelHi - levelLo <= 1) {
             finishSearch();
             return;
         }
         pairSteps++;
-        int loNits = (int) Math.round(levelNits(levelLo));
-        int hiNits = (int) Math.round(levelNits(levelHi));
-        pairStatus.setText(getString(R.string.hdr_test_pair_progress, pairSteps, loNits, hiNits));
-        renderLevel(paneA, levelLo);
-        renderLevel(paneB, levelHi);
+        int mid = (levelLo + levelHi) / 2;
+        pairMid = mid;
+        pairStatus.setText(getString(R.string.hdr_test_pair_progress, pairSteps,
+                Math.round(levelNits(mid)), Math.round(levelNits(LEVEL_COUNT - 1))));
+        renderLevel(paneA, mid);
+        renderLevel(paneB, LEVEL_COUNT - 1);
     }
 
     private void answerPair(boolean different) {
         if (!pairMode || levelHi - levelLo <= 1) {
             return;
         }
-        int mid = (levelLo + levelHi) / 2;
+        // Distinguishable: the candidate is still below the ceiling, so it becomes the new
+        // lower bound. Equal: the candidate has reached the ceiling, so it caps the range.
         if (different) {
-            levelLo = mid;
+            levelLo = pairMid;
         }
         else {
-            levelHi = mid;
+            levelHi = pairMid;
         }
         showBounds();
     }
 
     private void finishSearch() {
-        pairPeakNits = Math.sqrt(levelNits(levelLo) * levelNits(levelHi));
+        // The last level that still looked dimmer than the maximum is the ceiling estimate.
+        pairPeakNits = levelNits(levelLo);
         pairStatus.setText(getString(R.string.hdr_test_pair_result,
                 Math.round(pairPeakNits),
-                Math.round(levelNits(levelLo)),
                 Math.round(levelNits(levelHi))));
     }
 
