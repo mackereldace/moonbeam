@@ -57,9 +57,10 @@ android {
         // 0.7.14 曲线改圆角卡片、去掉 xx/xx 计数；比值一开始下降就自动锁定并写入保持时长
         // 0.7.15 曲线上不再写任何文字（比值已在显示内容里），只保留形状
         // 0.7.16 状态行显示 当前/最高 比值；系统开始压缩时转琥珀色并标明测量不可信
+        // 0.7.17 最高比值改用 getHighestHdrSdrRatio（API 36），不再靠“见过的最大值”猜
         // 1.0.0  首个正式版
-        versionName "0.7.16"
-        versionCode = 716
+        versionName "0.7.17"
+        versionCode = 717
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'

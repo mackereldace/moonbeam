@@ -530,6 +530,19 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         return 0f;
     }
 
+    /** Highest ratio the display can report; 0 when the API is unavailable. */
+    private float highestRatio() {
+        try {
+            Display display = getWindowManager().getDefaultDisplay();
+            if (Build.VERSION.SDK_INT >= 36 && display.isHdrSdrRatioAvailable()) {
+                return display.getHighestHdrSdrRatio();
+            }
+        }
+        catch (RuntimeException ignored) {
+        }
+        return 0f;
+    }
+
     /** Display brightness as the system currently applies it; 0 when it cannot be read. */
     private float currentBrightness() {
         try {
@@ -644,7 +657,13 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         // headroom, and a compressed range still separates two patches, so a measurement taken
         // then describes the compression, not the panel.
         float ratio = currentRatio();
-        if (ratio > ratioHigh) {
+        // The API knows the ceiling; tracking the maximum seen is only a fallback for devices
+        // that do not expose it (API 36+).
+        float apiHighest = highestRatio();
+        if (apiHighest > 0f) {
+            ratioHigh = apiHighest;
+        }
+        else if (ratio > ratioHigh) {
             ratioHigh = ratio;
         }
         if (ratio > 0f && ratioHigh > 0f) {
