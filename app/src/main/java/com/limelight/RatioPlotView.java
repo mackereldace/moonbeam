@@ -85,7 +85,9 @@ public class RatioPlotView extends View {
         float labelHeight = 26f;
         float plotBottom = h - pad - labelHeight;
 
-        canvas.drawRect(pad, pad, w - pad, plotBottom, axisPaint);
+        // A hairline frame inside the rounded card, kept away from the corners.
+        canvas.drawLine(pad + 4f, pad + 4f, w - pad - 4f, pad + 4f, axisPaint);
+        canvas.drawLine(pad + 4f, plotBottom - 4f, w - pad - 4f, plotBottom - 4f, axisPaint);
 
         int valid = 0;
         float min = Float.MAX_VALUE;
@@ -103,8 +105,7 @@ public class RatioPlotView extends View {
         }
 
         if (valid < 2) {
-            canvas.drawText(String.format(Locale.US, "样本 %d/%d（读不到比值）", valid, count),
-                    pad + 8f, h / 2f, textPaint);
+            canvas.drawText("读不到比值", pad + 10f, h / 2f, textPaint);
             return;
         }
 
@@ -134,7 +135,7 @@ public class RatioPlotView extends View {
 
         canvas.drawText(String.format(Locale.US, "%.2f", max), pad + 8f, pad + 20f, textPaint);
         canvas.drawText(String.format(Locale.US, "%.2f", min), pad + 8f, plotBottom - 6f, textPaint);
-        canvas.drawText(String.format(Locale.US, "HDR/SDR %.2f · %d/%d", last, valid, count),
-                pad + 8f, h - pad - 6f, textPaint);
+        canvas.drawText(String.format(Locale.US, "HDR/SDR %.2f", last),
+                pad + 10f, h - pad - 6f, textPaint);
     }
 }

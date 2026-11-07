@@ -61,6 +61,10 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private double guardDimNits;
     private RatioPlotView ratioPlot;
     private int ticks;
+    private float ratioBaseline;
+    private int dropSamples;
+    private boolean dropRecorded;
+    private int dropSeconds;
     private float ratioFirst;
     private float ratioLast;
     private float ratioMin;
@@ -428,6 +432,10 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         guardDimNits = peakNits * 0.8;
         ratioPlot.setVisibility(View.VISIBLE);
         ratioPlot.clear();
+        dropSamples = 0;
+        dropRecorded = false;
+        dropSeconds = 0;
+        ratioBaseline = 0f;
         ratioFirst = currentRatio();
         ratioLast = ratioFirst;
         ratioMin = ratioFirst;
@@ -456,6 +464,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
             }
             float ratio = currentRatio();
             ratioPlot.add(ratio);
+            trackDrop(ratio);
             if (ticks++ % 10 == 0) {
                 LimeLog.info("HDR hold: ratio=" + ratio + " t=" + elapsedText());
             }
@@ -474,6 +483,38 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
             handler.postDelayed(this, 500);
         }
     };
+
+    /**
+     * Watches for the moment the ratio starts falling and locks the elapsed time there.
+     *
+     * Waiting for the checkerboard to fade asks the user to notice something subtle and to
+     * react in time; the ratio drops first and more sharply, so it is the better trigger. The
+     * baseline is the highest value seen, and a drop must persist for a second before it counts
+     * - one noisy sample should not end the test.
+     */
+    private void trackDrop(float ratio) {
+        if (ratio <= 0f || dropRecorded) {
+            return;
+        }
+        if (ratio > ratioBaseline) {
+            ratioBaseline = ratio;
+            dropSamples = 0;
+            return;
+        }
+        if (ratioBaseline > 0f && ratio <= ratioBaseline * 0.97f) {
+            if (++dropSamples >= 2) {
+                dropRecorded = true;
+                dropSeconds = Math.max(1, elapsedSeconds());
+                HdrProfileStore.set(this, slot, HdrProfileStore.FIELD_STABILITY, dropSeconds);
+                progressView.setText(getString(R.string.hdr_test_dropped, secondsText(dropSeconds)));
+                LimeLog.info("HDR hold: ratio dropped " + ratioBaseline + " -> " + ratio
+                        + " at " + dropSeconds + "s");
+            }
+        }
+        else {
+            dropSamples = 0;
+        }
+    }
 
     /** What the display currently reports as its HDR/SDR ratio; 0 when unavailable. */
     private float currentRatio() {

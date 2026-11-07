@@ -104,6 +104,7 @@
     <string name="addpc_enter_ip">请输入一个IP地址</string>
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
+    <string name="hdr_test_dropped">已于 %1$s 开始下降 · 已写入槽位</string>
     <string name="hdr_test_guard_ratio">比值 %1$s→%2$s（最低 %3$s）</string>
 
         <string name="hdr_profile_source">使用的 HDR 数值</string>
