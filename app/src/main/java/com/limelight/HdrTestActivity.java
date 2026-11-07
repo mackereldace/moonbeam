@@ -180,7 +180,9 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
 
     private void drawPair(double leftNits, double rightNits) {
         int side = (int) Math.sqrt(PATCH_AREA * surfaceWidth * surfaceHeight);
-        int gap = Math.max(8, surfaceWidth / 100);
+        // The two squares touch: a gap would put a black bar exactly where the comparison
+        // happens, and the eye would judge the edges instead of the two fields.
+        int gap = 0;
         int leftX = (surfaceWidth - (side * 2 + gap)) / 2;
         int top = (surfaceHeight - side) / 2;
         HdrCanvas.nativeDrawPair(leftX, top, side, side, (float) leftNits,

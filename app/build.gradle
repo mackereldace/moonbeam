@@ -45,9 +45,10 @@ android {
         // 0.7.2  模式改名峰值/全局/黑位/阶梯，并加入黑位测量
         // 0.7.3  HDR 三元组存档：5 个槽位，单项测量分别写入；设置页可查看系统报告与槽位
         // 0.7.4  PQ 初始化带失败码；色彩空间改为创建 surface 时申请；10-bit 配置不再要求 alpha
+        // 0.7.5  峰值改为一对方块紧贴（无中缝）
         // 1.0.0  首个正式版
-        versionName "0.7.4"
-        versionCode = 704
+        versionName "0.7.5"
+        versionCode = 705
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'
