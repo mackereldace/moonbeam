@@ -91,6 +91,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private TextView questionView;
     private TextView valuesView;
     private TextView modeToggle;
+    private View answersRow;
     private boolean ladderMode;
     private volatile boolean ladderRunning;
     private Thread ladderThread;
@@ -135,6 +136,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         infoView = findViewById(R.id.hdrInfo);
         questionView = findViewById(R.id.hdrQuestion);
         modeToggle = findViewById(R.id.hdrMode);
+        answersRow = findViewById(R.id.hdrAnswers);
         valuesView = findViewById(R.id.hdrValues);
         progressView = findViewById(R.id.hdrProgress);
         answerDimmer = findViewById(R.id.hdrAnswerDimmer);
@@ -164,18 +166,18 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         if (ladderMode) {
             stopSearch();
             paneB.view.setVisibility(View.GONE);
+            answersRow.setVisibility(View.GONE);
+            valuesView.setVisibility(View.GONE);
+            progressView.setVisibility(View.GONE);
             questionView.setText(R.string.hdr_test_ladder_hint);
-            valuesView.setText("");
-            progressView.setText("");
-            answerDimmer.setAlpha(0.35f);
-            answerSame.setAlpha(0.35f);
             startLadder();
         }
         else {
             stopLadder();
             paneB.view.setVisibility(View.VISIBLE);
-            answerDimmer.setAlpha(1f);
-            answerSame.setAlpha(1f);
+            answersRow.setVisibility(View.VISIBLE);
+            valuesView.setVisibility(View.VISIBLE);
+            progressView.setVisibility(View.VISIBLE);
             questionView.setText(R.string.hdr_test_question);
             startSearch();
         }

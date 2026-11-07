@@ -144,10 +144,10 @@
     <string name="addpc_wrong_sitelocal">That address doesn\'t look right. You must use your router\'s public IP address for streaming over the Internet.</string>
 
     <!-- Preferences -->
-    <string name="hdr_test_ladder_hint">100 to 3200 nit in eight steps: where two steps merge is where the panel stops climbing.</string>
-    <string name="hdr_test_mode_measure">Back to measuring</string>
+    <string name="hdr_test_ladder_hint">Eight steps from 100 to 3200 nit. Where two steps stop separating is where the panel stops climbing.</string>
+    <string name="hdr_test_mode_measure">Measure</string>
 
-    <string name="hdr_test_question">Is the left side dimmer?</string>
+    <string name="hdr_test_question">Is the left field dimmer?</string>
     <string name="hdr_test_answer_dimmer">Dimmer</string>
     <string name="hdr_test_answer_same">Same</string>
     <string name="hdr_test_values">Left %1$d nit · right %2$d nit</string>
@@ -157,7 +157,7 @@
     <string name="hdr_test_finish_first">Finish the search first</string>
 
     <string name="hdr_test_mode_pair">Binary search for the peak</string>
-    <string name="hdr_test_mode_ladder">Show ladder</string>
+    <string name="hdr_test_mode_ladder">Ladder</string>
     <string name="hdr_test_pair_hint">Right pane is maximum brightness; the probe starts at 5000 nit. About nine answers land within 1%.</string>
     <string name="hdr_test_pair_diff">Can tell apart</string>
     <string name="hdr_test_pair_same">Same</string>
@@ -181,7 +181,7 @@
     <string name="hdr_test_layout_a">Bars</string>
     <string name="hdr_test_layout_b">Short bars</string>
     <string name="hdr_test_layout_c">One at a time</string>
-    <string name="hdr_test_save">Save and use</string>
+    <string name="hdr_test_save">Use it</string>
     <string name="hdr_test_close">Close</string>
     <string name="hdr_test_saved">Peak set to %1$d nit. Reconnect for it to take effect.</string>
     <string name="hdr_test_play_error">Cannot play the test clip: %1$s</string>

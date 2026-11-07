@@ -104,14 +104,14 @@
     <string name="addpc_enter_ip">请输入一个IP地址</string>
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
-    <string name="hdr_test_ladder_hint">100 到 3200 nit 共八档：哪两档开始分不开，就是它停止变亮的地方。</string>
+    <string name="hdr_test_ladder_hint">八档 100 → 3200 nit，哪两档开始分不开，就是它停止变亮的地方。</string>
     <string name="hdr_test_mode_measure">回到测量</string>
 
-    <string name="hdr_test_question">左边比右边暗吗？</string>
+    <string name="hdr_test_question">左边那块更暗吗？</string>
     <string name="hdr_test_answer_dimmer">更暗</string>
     <string name="hdr_test_answer_same">一样亮</string>
     <string name="hdr_test_values">左 %1$d nit · 右 %2$d nit</string>
-    <string name="hdr_test_progress">第 %1$d / %2$d 步 · 区间 %3$d–%4$d nit</string>
+    <string name="hdr_test_progress">第 %1$d/%2$d 步 · 区间 %3$d–%4$d nit</string>
     <string name="hdr_test_result">峰值 %1$d nit（区间 %2$d–%3$d）</string>
     <string name="hdr_test_done">%1$d 步完成</string>
     <string name="hdr_test_finish_first">先答完这一轮</string>
@@ -141,7 +141,7 @@
     <string name="hdr_test_layout_a">整条</string>
     <string name="hdr_test_layout_b">半高</string>
     <string name="hdr_test_layout_c">单档</string>
-    <string name="hdr_test_save">保存并采用</string>
+    <string name="hdr_test_save">采用</string>
     <string name="hdr_test_close">关闭</string>
     <string name="hdr_test_saved">峰值已设为 %1$d nit，重新连接后生效。</string>
     <string name="hdr_test_play_error">无法播放测试片：%1$s</string>

@@ -36,9 +36,10 @@ android {
         // 0.5.11 阶梯加密到 462 档（1% 一档），二分收敛到真值 1% 以内
         // 0.6.0  HDR 测试页重做界面：峰值测量为主
         // 0.6.1  阶梯保留（只留八档全高那一版），通过底部按钮切换；去掉半高/单档
+        // 0.6.2  测试页排版收紧：内容区占大块，按钮改胶囊尺寸，阶梯模式隐藏答题行
         // 1.0.0  首个正式版
-        versionName "0.6.1"
-        versionCode = 601
+        versionName "0.6.2"
+        versionCode = 602
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'
