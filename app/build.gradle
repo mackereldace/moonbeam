@@ -55,9 +55,10 @@ android {
         // 0.7.12 曲线同时采样亮度，画真正在变的那条；两者都不变时直说
         // 0.7.13 曲线只画比值（x=采样序号，y=比值），断点表示读不到；图上标出当前值与样本数
         // 0.7.14 曲线改圆角卡片、去掉 xx/xx 计数；比值一开始下降就自动锁定并写入保持时长
+        // 0.7.15 曲线上不再写任何文字（比值已在显示内容里），只保留形状
         // 1.0.0  首个正式版
-        versionName "0.7.14"
-        versionCode = 714
+        versionName "0.7.15"
+        versionCode = 715
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'
