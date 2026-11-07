@@ -11,20 +11,21 @@ import android.view.View;
 import java.util.Locale;
 
 /**
- * A strip chart for the two numbers that can move while the hold test runs.
+ * Strip chart of the display's HDR/SDR ratio against time.
  *
- * The HDR/SDR ratio turned out to be a driver constant on this device - it reports the same
- * value for minutes on end, and a flat line says nothing. The screen brightness value does move
- * when the panel limits itself, so both are sampled: the chart draws whichever actually varies
- * and labels which one that is. When neither moves, the label says so instead of pretending a
- * straight line is a measurement.
+ * x is the sample index - one sample every 500 ms - and y is the ratio itself. A sample of zero
+ * means the value could not be read at that instant; those are breaks in the line, not points
+ * at zero, because joining across a gap invents a measurement that never happened.
+ *
+ * The previous version silently switched to plotting the brightness series when the ratio had
+ * too few usable samples, which produced a flat line while the text underneath kept updating -
+ * a chart that disagrees with its own numbers is worse than no chart.
  */
 public class RatioPlotView extends View {
 
-    private static final int CAPACITY = 600;   // ten minutes at one sample per second
+    private static final int CAPACITY = 1200;   // ten minutes at two samples per second
 
     private final float[] ratio = new float[CAPACITY];
-    private final float[] brightness = new float[CAPACITY];
     private int count;
     private int head;
 
@@ -62,9 +63,8 @@ public class RatioPlotView extends View {
         invalidate();
     }
 
-    public void add(float ratioValue, float brightnessValue) {
-        ratio[head] = ratioValue;
-        brightness[head] = brightnessValue;
+    public void add(float value) {
+        ratio[head] = value > 0f ? value : 0f;
         head = (head + 1) % CAPACITY;
         if (count < CAPACITY) {
             count++;
@@ -72,26 +72,9 @@ public class RatioPlotView extends View {
         invalidate();
     }
 
-    private float sample(float[] series, int index) {
+    private float sample(int index) {
         int start = (head - count + CAPACITY) % CAPACITY;
-        return series[(start + index) % CAPACITY];
-    }
-
-    /** Range of a series, ignoring samples that were never available (<= 0). */
-    private float[] range(float[] series) {
-        float min = Float.MAX_VALUE;
-        float max = -Float.MAX_VALUE;
-        int seen = 0;
-        for (int i = 0; i < count; i++) {
-            float v = sample(series, i);
-            if (v <= 0f) {
-                continue;
-            }
-            min = Math.min(min, v);
-            max = Math.max(max, v);
-            seen++;
-        }
-        return seen < 2 ? null : new float[] {min, max};
+        return ratio[(start + index) % CAPACITY];
     }
 
     @Override
@@ -100,67 +83,58 @@ public class RatioPlotView extends View {
         int h = getHeight();
         float pad = 6f;
         float labelHeight = 26f;
+        float plotBottom = h - pad - labelHeight;
 
-        canvas.drawRect(pad, pad, w - pad, h - pad - labelHeight, axisPaint);
+        canvas.drawRect(pad, pad, w - pad, plotBottom, axisPaint);
 
-        if (count < 3) {
-            canvas.drawText("…", pad + 8f, h / 2f, textPaint);
-            return;
-        }
-
-        float[] ratioRange = range(ratio);
-        float[] brightnessRange = range(brightness);
-
-        boolean useRatio = ratioRange != null && ratioRange[1] - ratioRange[0] > 0.01f;
-        boolean useBrightness = brightnessRange != null
-                && brightnessRange[1] - brightnessRange[0] > 0.0005f;
-
-        float[] series;
-        float[] bounds;
-        String label;
-        if (useRatio) {
-            series = ratio;
-            bounds = ratioRange;
-            label = "HDR/SDR";
-        }
-        else if (useBrightness) {
-            series = brightness;
-            bounds = brightnessRange;
-            label = "亮度";
-        }
-        else {
-            canvas.drawText("两个值都没变化", pad + 8f, h - pad - 6f, textPaint);
-            return;
-        }
-
-        float min = bounds[0];
-        float max = bounds[1];
-        float span = Math.max(1e-4f, max - min);
-        min -= span * 0.15f;
-        max += span * 0.15f;
-
-        path.reset();
-        int plotted = 0;
+        int valid = 0;
+        float min = Float.MAX_VALUE;
+        float max = -Float.MAX_VALUE;
+        float last = 0f;
         for (int i = 0; i < count; i++) {
-            float v = sample(series, i);
+            float v = sample(i);
             if (v <= 0f) {
                 continue;
             }
-            float x = pad + (w - 2 * pad) * i / (float) (count - 1);
-            float y = (h - pad - labelHeight) - (h - 2 * pad - labelHeight) * (v - min) / (max - min);
-            if (plotted == 0) {
+            valid++;
+            last = v;
+            min = Math.min(min, v);
+            max = Math.max(max, v);
+        }
+
+        if (valid < 2) {
+            canvas.drawText(String.format(Locale.US, "样本 %d/%d（读不到比值）", valid, count),
+                    pad + 8f, h / 2f, textPaint);
+            return;
+        }
+
+        float span = Math.max(0.02f, max - min);
+        float lo = min - span * 0.2f;
+        float hi = max + span * 0.2f;
+
+        path.reset();
+        boolean drawing = false;
+        for (int i = 0; i < count; i++) {
+            float v = sample(i);
+            if (v <= 0f) {
+                drawing = false;
+                continue;
+            }
+            float x = pad + (w - 2 * pad) * i / (float) Math.max(1, count - 1);
+            float y = plotBottom - (plotBottom - pad) * (v - lo) / (hi - lo);
+            if (!drawing) {
                 path.moveTo(x, y);
+                drawing = true;
             }
             else {
                 path.lineTo(x, y);
             }
-            plotted++;
         }
         canvas.drawPath(path, linePaint);
 
-        canvas.drawText(String.format(Locale.US, "%.2f", bounds[1]), pad + 8f, pad + 22f, textPaint);
-        canvas.drawText(String.format(Locale.US, "%.2f", bounds[0]), pad + 8f,
-                h - pad - labelHeight - 6f, textPaint);
-        canvas.drawText(label, pad + 8f, h - pad - 6f, textPaint);
+        canvas.drawText(String.format(Locale.US, "%.2f", max), pad + 8f, pad + 20f, textPaint);
+        canvas.drawText(String.format(Locale.US, "%.2f", min), pad + 8f, plotBottom - 6f, textPaint);
+        canvas.drawText(String.format(Locale.US, "HDR/SDR %.2f · %d/%d", last, valid, count),
+                pad + 8f, h - pad - 6f, textPaint);
     }
 }

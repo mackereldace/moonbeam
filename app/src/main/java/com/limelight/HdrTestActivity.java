@@ -60,6 +60,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private long guardStartMillis;
     private double guardDimNits;
     private RatioPlotView ratioPlot;
+    private int ticks;
     private float ratioFirst;
     private float ratioLast;
     private float ratioMin;
@@ -454,7 +455,10 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
                 return;
             }
             float ratio = currentRatio();
-            ratioPlot.add(ratio, currentBrightness());
+            ratioPlot.add(ratio);
+            if (ticks++ % 10 == 0) {
+                LimeLog.info("HDR hold: ratio=" + ratio + " t=" + elapsedText());
+            }
             if (ratio > 0f) {
                 if (ratioFirst <= 0f) {
                     ratioFirst = ratio;
