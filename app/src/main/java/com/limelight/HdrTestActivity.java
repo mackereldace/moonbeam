@@ -58,7 +58,8 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
             "hdr/ladder-C.mp4",  // one bar at a time
     };
     private static final String LEVEL_CLIP = "hdr/levels.mp4";
-    private static final int LEVEL_COUNT = 48;
+    /** 1% log steps: bisection lands within one percent of the real ceiling. */
+    private static final int LEVEL_COUNT = 462;
     private static final double LEVEL_MIN_NITS = 100.0;
     private static final double LEVEL_MAX_NITS = 10000.0;
 
@@ -308,10 +309,13 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
             pairStatus.setText(getString(R.string.hdr_test_pair_ceiling, Math.round(pairPeakNits)));
             return;
         }
-        pairPeakNits = levelNits(indexLow);
+        double lower = levelNits(indexLow);
         double upper = indexHigh >= 0 ? levelNits(indexHigh) : levelNits(LEVEL_COUNT - 1);
+        // Two adjacent steps are 1% apart, so the geometric middle is the best estimate the
+        // ladder can support and is within half a percent of the true ceiling.
+        pairPeakNits = Math.sqrt(lower * upper);
         pairStatus.setText(getString(R.string.hdr_test_pair_result,
-                Math.round(pairPeakNits), Math.round(upper)));
+                Math.round(pairPeakNits), Math.round(lower), Math.round(upper)));
     }
 
     /** Nearest level index to a luminance. */

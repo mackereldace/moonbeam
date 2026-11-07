@@ -33,9 +33,10 @@ android {
         // 0.5.8  二分逻辑修正：右块固定满亮度，左块测点；得到"最后一个还看得出更暗"的亮度
         // 0.5.9  搜索从 5000 起按亮度折半下降，看不出就减半，看得出再二分回升
         // 0.5.10 改回标准二分：首问 5000，之后一律取区间中点，不再翻倍跳到 10000
+        // 0.5.11 阶梯加密到 462 档（1% 一档），二分收敛到真值 1% 以内
         // 1.0.0  首个正式版
-        versionName "0.5.10"
-        versionCode = 510
+        versionName "0.5.11"
+        versionCode = 511
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'
