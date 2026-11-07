@@ -112,7 +112,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private int selectedIndex = STEPS_NITS.length - 1;
 
     private boolean pairMode;
-    private int levelLo, levelHi, pairMid, pairSteps;
+    private int pairSteps;
     private double pairPeakNits;
 
     /** One renderer thread: a Surface takes one codec at a time, and answers come in bursts. */
@@ -219,11 +219,8 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
             paneB.close();
             paneB.view.setVisibility(View.VISIBLE);
 
-            levelLo = 0;
-            levelHi = LEVEL_COUNT - 1;
-            pairSteps = 0;
             pairPeakNits = 0;
-            showBounds();
+            startSearch();
         }
         else {
             paneB.view.setVisibility(View.GONE);
@@ -235,50 +232,102 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     }
 
     /**
-     * One test point against a fixed reference.
+     * Search the peak against a fixed reference.
      *
-     * The reference pane always shows the top level, which any panel clips to its own peak, so
-     * it is the brightest thing the screen can produce. The left pane shows the candidate, and
-     * the question is simply "does this look dimmer than the maximum?" - the answer is yes
-     * exactly while the candidate sits below the ceiling. Comparing the two bounds against each
-     * other, which is what this did before, carries no information: two levels below the peak
-     * always look different from each other.
+     * The right pane always shows the top level, which the panel clips to its own peak: it is
+     * the brightest thing the screen can produce. The left pane shows a candidate, and the only
+     * question is whether it looks dimmer than that maximum - true exactly while the candidate
+     * sits below the ceiling.
+     *
+     * The search starts at 5000 nit and halves while the two look the same (meaning the
+     * candidate is at or above the ceiling), then bisects between the last value that was above
+     * the ceiling and the first one below it.
      */
-    private void showBounds() {
-        if (levelHi - levelLo <= 1) {
-            finishSearch();
-            return;
-        }
+    private static final double SEARCH_START_NITS = 5000.0;
+
+    private int indexLow = -1;    // last level that still looked dimmer than the maximum
+    private int indexHigh = -1;   // first level that looked the same as the maximum
+    private int indexCandidate;
+
+    private void startSearch() {
+        pairSteps = 0;
+        indexLow = -1;
+        indexHigh = -1;
+        indexCandidate = nearestLevel(SEARCH_START_NITS);
+        showCandidate();
+    }
+
+    private void showCandidate() {
         pairSteps++;
-        int mid = (levelLo + levelHi) / 2;
-        pairMid = mid;
+        indexCandidate = Math.max(0, Math.min(LEVEL_COUNT - 2, indexCandidate));
         pairStatus.setText(getString(R.string.hdr_test_pair_progress, pairSteps,
-                Math.round(levelNits(mid)), Math.round(levelNits(LEVEL_COUNT - 1))));
-        renderLevel(paneA, mid);
+                Math.round(levelNits(indexCandidate)), Math.round(levelNits(LEVEL_COUNT - 1))));
+        renderLevel(paneA, indexCandidate);
         renderLevel(paneB, LEVEL_COUNT - 1);
     }
 
-    private void answerPair(boolean different) {
-        if (!pairMode || levelHi - levelLo <= 1) {
+    /**
+     * One answer, one step on the ladder of indices.
+     *
+     * "Dimmer" means the candidate sits below the ceiling, so it becomes the floor; "same"
+     * means it has reached the ceiling, so it becomes the cap. While only one side of the
+     * bracket is known the search keeps bisecting towards the other end - which is the
+     * descent from 5000 that a panel above 5000 nit would never need.
+     */
+    private void answerPair(boolean dimmer) {
+        if (!pairMode) {
             return;
         }
-        // Distinguishable: the candidate is still below the ceiling, so it becomes the new
-        // lower bound. Equal: the candidate has reached the ceiling, so it caps the range.
-        if (different) {
-            levelLo = pairMid;
+        if (dimmer) {
+            indexLow = indexCandidate;
         }
         else {
-            levelHi = pairMid;
+            indexHigh = indexCandidate;
         }
-        showBounds();
+
+        int next;
+        if (indexLow >= 0 && indexHigh >= 0) {
+            next = (indexLow + indexHigh) / 2;
+        }
+        else if (indexHigh >= 0) {
+            // Still descending, and the useful step is a halving of the luminance itself
+            // (5000 -> 2500 -> 1250 ...), not of the index, which would jump far too low.
+            next = nearestLevel(levelNits(indexHigh) / 2);
+        }
+        else {
+            next = nearestLevel(Math.min(levelNits(indexLow) * 2, levelNits(LEVEL_COUNT - 2)));
+        }
+
+        boolean converged = (indexHigh >= 0 && indexLow >= 0 && indexHigh - indexLow <= 1)
+                || next == indexCandidate
+                || next == indexLow
+                || next == indexHigh;
+        indexCandidate = next;
+        if (converged) {
+            finishSearch();
+        }
+        else {
+            showCandidate();
+        }
     }
 
     private void finishSearch() {
-        // The last level that still looked dimmer than the maximum is the ceiling estimate.
-        pairPeakNits = levelNits(levelLo);
+        if (indexLow < 0) {
+            pairPeakNits = levelNits(LEVEL_COUNT - 1);
+            pairStatus.setText(getString(R.string.hdr_test_pair_ceiling, Math.round(pairPeakNits)));
+            return;
+        }
+        pairPeakNits = levelNits(indexLow);
+        double upper = indexHigh >= 0 ? levelNits(indexHigh) : levelNits(LEVEL_COUNT - 1);
         pairStatus.setText(getString(R.string.hdr_test_pair_result,
-                Math.round(pairPeakNits),
-                Math.round(levelNits(levelHi))));
+                Math.round(pairPeakNits), Math.round(upper)));
+    }
+
+    /** Nearest level index to a luminance. */
+    private static int nearestLevel(double nits) {
+        double t = Math.log(nits / LEVEL_MIN_NITS) / Math.log(LEVEL_MAX_NITS / LEVEL_MIN_NITS);
+        int index = (int) Math.round(t * (LEVEL_COUNT - 1));
+        return Math.max(0, Math.min(LEVEL_COUNT - 1, index));
     }
 
     /** Level i's luminance: log-spaced across the clip's range. */
