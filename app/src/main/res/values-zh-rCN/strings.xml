@@ -104,6 +104,7 @@
     <string name="addpc_enter_ip">请输入一个IP地址</string>
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
+    <string name="hdr_test_no_pq">这台设备不支持 PQ 渲染（缺少 EGL BT2020/PQ）</string>
     <string name="hdr_test_ladder_hint">八档 100 → 3200 nit</string>
     <string name="hdr_test_mode_measure">测量</string>
 

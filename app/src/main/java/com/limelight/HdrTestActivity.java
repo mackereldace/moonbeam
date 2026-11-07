@@ -3,18 +3,14 @@ package com.limelight;
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
-import android.content.res.AssetFileDescriptor;
 import android.graphics.Color;
-import android.media.MediaCodec;
-import android.media.MediaExtractor;
-import android.media.MediaFormat;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.view.Display;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -23,92 +19,54 @@ import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.limelight.hdr.HdrCanvas;
 import com.limelight.preferences.PreferenceConfiguration;
+import com.limelight.utils.HdrDisplayCapabilities;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Locale;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
- * Measures the display's luminance ceiling on the device itself.
+ * Measures the display's luminance ceiling by drawing PQ patches natively.
  *
- * Two fields are shown side by side. The right one is always the top of the ladder, which any
- * panel clips to its own peak - the brightest light it can produce. The left one is a candidate:
- * if it looks dimmer than the right, it is still below the ceiling; if the two look identical,
- * it has reached it. A plain bisection over a one-percent log ladder finds that point in about
- * nine answers, and nothing here depends on the peak Android reports, which is what makes the
- * tool worth having when a panel under-reports itself.
+ * The values are produced on the device rather than decoded from a clip: the surface is
+ * declared BT2020/PQ through EGL, so the shader's output is a PQ code and any luminance can be
+ * asked for at runtime. That makes the patch geometry exact (5% of the screen really is 5%), it
+ * removes the clips from the APK, and a measurement can be refined to any resolution.
+ *
+ * The right patch is always the top of the range, which the panel clips to its own peak - the
+ * brightest it can produce. The left one is bisected: dimmer means still below the ceiling,
+ * identical means it has reached it.
  */
 public class HdrTestActivity extends Activity implements SurfaceHolder.Callback {
 
-    private static final String LEVEL_CLIP = "hdr/levels.mp4";
-    private static final String LADDER_CLIP = "hdr/ladder.mp4";
-    /** One percent apart, from 100 to 10000 nit. */
-    private static final int LEVEL_COUNT = 462;
-    private static final double LEVEL_MIN_NITS = 100.0;
-    private static final double LEVEL_MAX_NITS = 10000.0;
-    private static final double START_NITS = 5000.0;
-    /** ceil(log2(LEVEL_COUNT)); shown as the progress denominator. */
+    private static final double PATCH_AREA = 0.05;   // per patch, so 10% total
+    private static final double START_NITS = 5000;
+    private static final double MIN_NITS = 100;
+    private static final double MAX_NITS = 10000;
     private static final int MAX_STEPS = 9;
+    private static final float[] LADDER_NITS = {100, 203, 400, 700, 1000, 1600, 2400, 3200};
 
-    /** One SurfaceView plus the decoder that feeds it, kept alive across answers. */
-    private final class Pane {
-        final SurfaceView view;
-        MediaExtractor extractor;
-        MediaCodec codec;
-        long segmentUs = 1_000_000L;
-
-        Pane(SurfaceView view) {
-            this.view = view;
-        }
-
-        boolean hasSurface() {
-            return view.getHolder().getSurface() != null && view.getHolder().getSurface().isValid();
-        }
-
-        void close() {
-            if (codec != null) {
-                try {
-                    codec.stop();
-                }
-                catch (RuntimeException ignored) {
-                }
-                codec.release();
-                codec = null;
-            }
-            if (extractor != null) {
-                extractor.release();
-                extractor = null;
-            }
-        }
-    }
-
-    private Pane paneA;
-    private Pane paneB;
-
+    private SurfaceView surfaceView;
     private TextView infoView;
     private TextView questionView;
     private TextView valuesView;
+    private TextView progressView;
     private TextView modeToggle;
     private View answersRow;
-    private boolean ladderMode;
-    private volatile boolean ladderRunning;
-    private Thread ladderThread;
-    private Pane ladderPane;
-    private TextView progressView;
-    private TextView answerDimmer;
-    private TextView answerSame;
 
-    private int indexLow = -1;
-    private int indexHigh = -1;
-    private int indexCandidate;
+    private boolean ready;
+    private boolean ladderMode;
+
+    private double lowNits;
+    private double highNits;
+    private double candidateNits;
     private int steps;
     private double peakNits;
     private boolean finished;
 
-    private final ExecutorService renderer = Executors.newSingleThreadExecutor();
+    private int surfaceWidth;
+    private int surfaceHeight;
+
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable sampler = new Runnable() {
         @Override
@@ -133,32 +91,171 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         setContentView(R.layout.activity_hdr_test);
         applyWindowInsets();
 
-        paneA = new Pane((SurfaceView) findViewById(R.id.hdrSurface));
-        paneB = new Pane((SurfaceView) findViewById(R.id.hdrSurfaceB));
+        surfaceView = findViewById(R.id.hdrSurface);
         infoView = findViewById(R.id.hdrInfo);
         questionView = findViewById(R.id.hdrQuestion);
-        modeToggle = findViewById(R.id.hdrMode);
-        answersRow = findViewById(R.id.hdrAnswers);
         valuesView = findViewById(R.id.hdrValues);
         progressView = findViewById(R.id.hdrProgress);
-        answerDimmer = findViewById(R.id.hdrAnswerDimmer);
-        answerSame = findViewById(R.id.hdrAnswerSame);
+        modeToggle = findViewById(R.id.hdrMode);
+        answersRow = findViewById(R.id.hdrAnswers);
 
-        paneA.view.getHolder().addCallback(this);
-        paneB.view.getHolder().addCallback(this);
-
+        surfaceView.getHolder().addCallback(this);
         modeToggle.setOnClickListener(v -> toggleMode());
-        answerDimmer.setOnClickListener(v -> answer(true));
-        answerSame.setOnClickListener(v -> answer(false));
+        findViewById(R.id.hdrAnswerDimmer).setOnClickListener(v -> answer(true));
+        findViewById(R.id.hdrAnswerSame).setOnClickListener(v -> answer(false));
         findViewById(R.id.hdrSave).setOnClickListener(v -> saveAndFinish());
         findViewById(R.id.hdrClose).setOnClickListener(v -> finish());
     }
 
-    /**
-     * Lay out edge to edge and keep the controls clear of the gesture bar and the cutout.
-     * Without this the card sits under the navigation pill and the system draws its own black
-     * strip over the buttons.
-     */
+    // ---- rendering ---------------------------------------------------------
+
+    @Override
+    public void surfaceCreated(SurfaceHolder holder) {
+        Surface surface = holder.getSurface();
+        surfaceWidth = surfaceView.getWidth();
+        surfaceHeight = surfaceView.getHeight();
+        ready = HdrCanvas.nativeInit(surface, surfaceWidth, surfaceHeight);
+        if (!ready) {
+            valuesView.setText(R.string.hdr_test_no_pq);
+            valuesView.setTextColor(Color.parseColor("#FF6E6E"));
+            LimeLog.severe("HDR test: surface is not BT2020/PQ capable");
+            return;
+        }
+        startSearch();
+    }
+
+    @Override
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+        surfaceWidth = width;
+        surfaceHeight = height;
+        if (ready) {
+            redraw();
+        }
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder holder) {
+        if (ready) {
+            HdrCanvas.nativeRelease();
+            ready = false;
+        }
+    }
+
+    private void drawPair(double leftNits, double rightNits) {
+        int side = (int) Math.sqrt(PATCH_AREA * surfaceWidth * surfaceHeight);
+        int gap = Math.max(8, surfaceWidth / 100);
+        int leftX = (surfaceWidth - (side * 2 + gap)) / 2;
+        int top = (surfaceHeight - side) / 2;
+        HdrCanvas.nativeDrawPair(leftX, top, side, side, (float) leftNits,
+                leftX + side + gap, top, side, side, (float) rightNits);
+    }
+
+    private void drawLadder() {
+        int top = (int) (surfaceHeight * 0.1);
+        int height = (int) (surfaceHeight * 0.8);
+        HdrCanvas.nativeDrawLadder(top, height, LADDER_NITS);
+    }
+
+    private void redraw() {
+        if (!ready) {
+            return;
+        }
+        if (ladderMode) {
+            drawLadder();
+        }
+        else if (!finished) {
+            drawPair(candidateNits, MAX_NITS);
+        }
+        else {
+            drawPair(peakNits, MAX_NITS);
+        }
+    }
+
+    // ---- search ------------------------------------------------------------
+
+    private void startSearch() {
+        lowNits = 0;
+        highNits = 0;
+        candidateNits = START_NITS;
+        steps = 0;
+        finished = false;
+        ask();
+    }
+
+    private void ask() {
+        steps++;
+        valuesView.setText(getString(R.string.hdr_test_values,
+                Math.round(candidateNits), Math.round(MAX_NITS)));
+        progressView.setText(getString(R.string.hdr_test_progress, steps, MAX_STEPS,
+                Math.round(areaPercent()), Math.round(areaPercent() * 2)));
+        drawPair(candidateNits, MAX_NITS);
+    }
+
+    /** Area of each patch as a percentage of the screen, computed from the real geometry. */
+    private double areaPercent() {
+        int side = (int) Math.sqrt(PATCH_AREA * surfaceWidth * surfaceHeight);
+        return 100.0 * side * side / ((double) surfaceWidth * surfaceHeight);
+    }
+
+    private void answer(boolean dimmer) {
+        if (!ready || finished) {
+            return;
+        }
+        if (dimmer) {
+            lowNits = candidateNits;
+        }
+        else {
+            highNits = candidateNits;
+        }
+
+        double low = lowNits > 0 ? lowNits : MIN_NITS;
+        double high = highNits > 0 ? highNits : MAX_NITS;
+        double next = Math.sqrt(low * high);
+        boolean converged = (lowNits > 0 && highNits > 0 && high / low < 1.01)
+                || Math.abs(next - candidateNits) < 1;
+        candidateNits = next;
+        if (converged) {
+            finishSearch();
+        }
+        else {
+            ask();
+        }
+    }
+
+    private void finishSearch() {
+        finished = true;
+        double low = lowNits > 0 ? lowNits : MIN_NITS;
+        double high = highNits > 0 ? highNits : MAX_NITS;
+        peakNits = Math.sqrt(low * high);
+        questionView.setText(getString(R.string.hdr_test_result,
+                Math.round(peakNits), Math.round(low), Math.round(high)));
+        valuesView.setText("");
+        progressView.setText(getString(R.string.hdr_test_done, steps));
+        answersRow.setVisibility(View.GONE);
+        drawPair(peakNits, MAX_NITS);
+    }
+
+    private void toggleMode() {
+        ladderMode = !ladderMode;
+        modeToggle.setText(ladderMode ? R.string.hdr_test_mode_measure : R.string.hdr_test_mode_ladder);
+        if (ladderMode) {
+            answersRow.setVisibility(View.GONE);
+            valuesView.setVisibility(View.GONE);
+            progressView.setVisibility(View.GONE);
+            questionView.setText(R.string.hdr_test_ladder_hint);
+            drawLadder();
+        }
+        else {
+            answersRow.setVisibility(View.VISIBLE);
+            valuesView.setVisibility(View.VISIBLE);
+            progressView.setVisibility(View.VISIBLE);
+            questionView.setText(R.string.hdr_test_question);
+            startSearch();
+        }
+    }
+
+    // ---- lifecycle ---------------------------------------------------------
+
     private void applyWindowInsets() {
         final View root = findViewById(R.id.hdrRoot);
         if (Build.VERSION.SDK_INT >= 30) {
@@ -191,390 +288,12 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         root.requestApplyInsets();
     }
 
-    // ---- ladder ------------------------------------------------------------
-
-    /**
-     * Eight fixed steps from 100 to 3200 nit, shown as adjacent bars. This is the sanity view:
-     * it says whether the screen separates highlights at all, and where the steps start to
-     * merge, without asking the user anything. The two variants that used to live here (a
-     * shorter band and a single step at a time) only repeated what this already shows.
-     */
-    private void toggleMode() {
-        ladderMode = !ladderMode;
-        modeToggle.setText(ladderMode ? R.string.hdr_test_mode_measure : R.string.hdr_test_mode_ladder);
-        if (ladderMode) {
-            stopSearch();
-            paneB.view.setVisibility(View.GONE);
-            answersRow.setVisibility(View.GONE);
-            valuesView.setVisibility(View.GONE);
-            progressView.setVisibility(View.GONE);
-            questionView.setText(R.string.hdr_test_ladder_hint);
-            startLadder();
-        }
-        else {
-            stopLadder();
-            paneB.view.setVisibility(View.VISIBLE);
-            answersRow.setVisibility(View.VISIBLE);
-            valuesView.setVisibility(View.VISIBLE);
-            progressView.setVisibility(View.VISIBLE);
-            questionView.setText(R.string.hdr_test_question);
-            startSearch();
-        }
-    }
-
-    private void startLadder() {
-        stopLadder();
-        ladderRunning = true;
-        ladderThread = new Thread(this::decodeLadder, "hdr-ladder");
-        ladderThread.start();
-    }
-
-    private void stopLadder() {
-        ladderRunning = false;
-        Thread thread = ladderThread;
-        ladderThread = null;
-        if (thread != null) {
-            try {
-                thread.join(1200);
-            }
-            catch (InterruptedException ignored) {
-                Thread.currentThread().interrupt();
-            }
-        }
-        if (ladderPane != null) {
-            ladderPane.close();
-            ladderPane = null;
-        }
-    }
-
-    private void decodeLadder() {
-        ladderPane = new Pane(paneA.view);
-        long deadline = SystemClock.elapsedRealtime() + 1500;
-        while (!ladderPane.hasSurface() && SystemClock.elapsedRealtime() < deadline) {
-            SystemClock.sleep(50);
-        }
-        if (!ensurePane(ladderPane, LADDER_CLIP, 1)) {
-            return;
-        }
-        MediaExtractor extractor = ladderPane.extractor;
-        MediaCodec codec = ladderPane.codec;
-        try {
-            MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
-            boolean inputDone = false;
-            while (ladderRunning) {
-                if (!inputDone) {
-                    int inIndex = codec.dequeueInputBuffer(10_000);
-                    if (inIndex >= 0) {
-                        ByteBuffer buffer = codec.getInputBuffer(inIndex);
-                        int size = buffer == null ? -1 : extractor.readSampleData(buffer, 0);
-                        if (size < 0) {
-                            codec.queueInputBuffer(inIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-                            inputDone = true;
-                        }
-                        else {
-                            codec.queueInputBuffer(inIndex, 0, size, extractor.getSampleTime(), 0);
-                            extractor.advance();
-                        }
-                    }
-                }
-                int outIndex = codec.dequeueOutputBuffer(info, 10_000);
-                if (outIndex >= 0) {
-                    boolean eos = (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
-                    codec.releaseOutputBuffer(outIndex, true);
-                    if (eos) {
-                        codec.flush();
-                        extractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
-                        inputDone = false;
-                    }
-                }
-            }
-        }
-        catch (RuntimeException e) {
-            reportFailure("ladder", e);
-        }
-    }
-
-    private void stopSearch() {
-        finished = true;
-    }
-
-    // ---- search ------------------------------------------------------------
-
-    private void startSearch() {
-        indexLow = -1;
-        indexHigh = -1;
-        indexCandidate = nearestLevel(START_NITS);
-        steps = 0;
-        finished = false;
-        ask();
-    }
-
-    private void ask() {
-        steps++;
-        show(valuesView, getString(R.string.hdr_test_values,
-                Math.round(levelNits(indexCandidate)), Math.round(levelNits(LEVEL_COUNT - 1))));
-        int low = indexLow >= 0 ? indexLow : 0;
-        int high = indexHigh >= 0 ? indexHigh : LEVEL_COUNT - 1;
-        progressView.setText(getString(R.string.hdr_test_progress, steps, MAX_STEPS,
-                Math.round(levelNits(low)), Math.round(levelNits(high))));
-        renderLevel(paneA, indexCandidate);
-        renderLevel(paneB, LEVEL_COUNT - 1);
-    }
-
-    private void answer(boolean dimmer) {
-        if (finished) {
-            return;
-        }
-        if (dimmer) {
-            indexLow = indexCandidate;
-        }
-        else {
-            indexHigh = indexCandidate;
-        }
-
-        int low = indexLow >= 0 ? indexLow : 0;
-        int high = indexHigh >= 0 ? indexHigh : LEVEL_COUNT - 1;
-        int next = (low + high) / 2;
-
-        boolean converged = (indexLow >= 0 && indexHigh >= 0 && indexHigh - indexLow <= 1)
-                || next == indexCandidate || next == indexLow || next == indexHigh;
-        indexCandidate = next;
-        if (converged) {
-            finishSearch();
-        }
-        else {
-            ask();
-        }
-    }
-
-    private void finishSearch() {
-        finished = true;
-        double lower = levelNits(indexLow >= 0 ? indexLow : 0);
-        double upper = levelNits(indexHigh >= 0 ? indexHigh : LEVEL_COUNT - 1);
-        peakNits = Math.sqrt(lower * upper);
-        show(valuesView, getString(R.string.hdr_test_result, Math.round(peakNits),
-                Math.round(lower), Math.round(upper)));
-        progressView.setText(getString(R.string.hdr_test_done, steps));
-        answerDimmer.setAlpha(0.35f);
-        answerSame.setAlpha(0.35f);
-    }
-
-    /** Level i's luminance: log-spaced across the clip's range. */
-    private static double levelNits(int index) {
-        double t = (double) index / (LEVEL_COUNT - 1);
-        return LEVEL_MIN_NITS * Math.pow(LEVEL_MAX_NITS / LEVEL_MIN_NITS, t);
-    }
-
-    private static int nearestLevel(double nits) {
-        double t = Math.log(nits / LEVEL_MIN_NITS) / Math.log(LEVEL_MAX_NITS / LEVEL_MIN_NITS);
-        return Math.max(0, Math.min(LEVEL_COUNT - 1, (int) Math.round(t * (LEVEL_COUNT - 1))));
-    }
-
-    // ---- rendering ---------------------------------------------------------
-
-    private void renderLevel(final Pane pane, final int index) {
-        renderer.execute(() -> renderLevelNow(pane, index));
-    }
-
-    private void renderLevelNow(Pane pane, int index) {
-        long surfaceDeadline = SystemClock.elapsedRealtime() + 1500;
-        while (!pane.hasSurface() && SystemClock.elapsedRealtime() < surfaceDeadline) {
-            SystemClock.sleep(50);
-        }
-        if (!ensurePane(pane)) {
-            return;
-        }
-        MediaCodec codec = pane.codec;
-        MediaExtractor extractor = pane.extractor;
-        if (codec == null || extractor == null) {
-            return;
-        }
-
-        long target = Math.min(index * pane.segmentUs,
-                Math.max(0, pane.segmentUs * LEVEL_COUNT - 1));
-        try {
-            extractor.seekTo(target, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
-            codec.flush();
-
-            MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
-            long deadline = SystemClock.elapsedRealtime() + 2000;
-            boolean fed = false;
-
-            while (SystemClock.elapsedRealtime() < deadline) {
-                if (!fed) {
-                    int inIndex = codec.dequeueInputBuffer(10_000);
-                    if (inIndex >= 0) {
-                        ByteBuffer buffer = codec.getInputBuffer(inIndex);
-                        int size = buffer == null ? -1 : extractor.readSampleData(buffer, 0);
-                        if (size < 0) {
-                            return;
-                        }
-                        codec.queueInputBuffer(inIndex, 0, size, extractor.getSampleTime(), 0);
-                        extractor.advance();
-                        fed = true;
-                    }
-                }
-                int outIndex = codec.dequeueOutputBuffer(info, 10_000);
-                if (outIndex >= 0) {
-                    boolean reached = info.presentationTimeUs >= target - 1;
-                    codec.releaseOutputBuffer(outIndex, reached);
-                    if (reached) {
-                        return;
-                    }
-                    fed = false;
-                }
-            }
-        }
-        catch (RuntimeException e) {
-            pane.close();
-            reportFailure("render", e);
-        }
-    }
-
-    private boolean ensurePane(Pane pane) {
-        return ensurePane(pane, LEVEL_CLIP, LEVEL_COUNT);
-    }
-
-    private boolean ensurePane(Pane pane, String clip, int levelCount) {
-        if (pane.codec != null) {
-            return true;
-        }
-        if (!pane.hasSurface()) {
-            return false;
-        }
-        MediaExtractor extractor = new MediaExtractor();
-        try {
-            AssetFileDescriptor afd = getAssets().openFd(clip);
-            extractor.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
-            afd.close();
-
-            int track = -1;
-            MediaFormat format = null;
-            for (int i = 0; i < extractor.getTrackCount(); i++) {
-                MediaFormat candidate = extractor.getTrackFormat(i);
-                String mime = candidate.getString(MediaFormat.KEY_MIME);
-                if (mime != null && mime.startsWith("video/")) {
-                    track = i;
-                    format = candidate;
-                    break;
-                }
-            }
-            if (format == null) {
-                extractor.release();
-                reportFailure("open", new IllegalStateException("no video track"));
-                return false;
-            }
-            extractor.selectTrack(track);
-
-            if (format.containsKey(MediaFormat.KEY_DURATION)) {
-                long durationUs = format.getLong(MediaFormat.KEY_DURATION);
-                if (durationUs > 0) {
-                    pane.segmentUs = durationUs / levelCount;
-                }
-            }
-            String mime = format.getString(MediaFormat.KEY_MIME);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                format.setInteger(MediaFormat.KEY_COLOR_RANGE, MediaFormat.COLOR_RANGE_FULL);
-            }
-
-            MediaCodec codec = MediaCodec.createDecoderByType(mime);
-            codec.configure(format, pane.view.getHolder().getSurface(), null, 0);
-            codec.start();
-
-            pane.extractor = extractor;
-            pane.codec = codec;
-            return true;
-        }
-        catch (IOException | RuntimeException e) {
-            extractor.release();
-            reportFailure("open", e);
-            return false;
-        }
-    }
-
-    // ---- lifecycle ---------------------------------------------------------
-
-    @Override
-    public void surfaceCreated(SurfaceHolder holder) {
-        if (paneA.hasSurface() && paneB.hasSurface() && !finished && steps == 0) {
-            handler.post(this::startSearch);
-        }
-    }
-
-    @Override
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-    }
-
-    @Override
-    public void surfaceDestroyed(SurfaceHolder holder) {
-        paneA.close();
-        paneB.close();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        handler.post(sampler);
-        if (!ladderMode && paneA.hasSurface() && paneB.hasSurface() && steps == 0) {
-            handler.post(this::startSearch);
-        }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        handler.removeCallbacks(sampler);
-        stopLadder();
-        paneA.close();
-        paneB.close();
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        renderer.shutdownNow();
-    }
-
-    // ---- diagnostics -------------------------------------------------------
-
-    private void reportFailure(String stage, Throwable error) {
-        StringBuilder trace = new StringBuilder();
-        for (StackTraceElement element : error.getStackTrace()) {
-            trace.append(element).append('\n');
-            if (trace.length() > 600) {
-                break;
-            }
-        }
-        LimeLog.severe("HDR test " + stage + " failed: " + error + "\n" + trace);
-        handler.post(() -> {
-            valuesView.setText(getString(R.string.hdr_test_play_error, stage + ": "
-                    + error.getClass().getSimpleName()
-                    + (error.getMessage() == null ? "" : " " + error.getMessage())));
-            valuesView.setTextColor(Color.parseColor("#FF6E6E"));
-        });
-    }
-
     private void updateInfo() {
         Display display = getWindowManager().getDefaultDisplay();
         StringBuilder sb = new StringBuilder();
-
         boolean hdr = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && display.isHdr();
         sb.append(getString(R.string.hdr_test_info_hdr,
                 getString(hdr ? R.string.common_yes : R.string.common_no)));
-
-        // BrightnessInfo is @hide: read reflectively, skipped when unavailable.
-        try {
-            Object info = Display.class.getMethod("getBrightnessInfo").invoke(display);
-            if (info != null) {
-                Class<?> type = info.getClass();
-                sb.append("  ·  ").append(getString(R.string.hdr_test_info_brightness,
-                        fmt(type.getField("brightness").getFloat(info)),
-                        fmt(type.getField("brightnessMaximum").getFloat(info))));
-            }
-        }
-        catch (Throwable ignored) {
-        }
-
         if (Build.VERSION.SDK_INT >= 34) {
             try {
                 if (display.isHdrSdrRatioAvailable()) {
@@ -585,19 +304,8 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
             catch (RuntimeException ignored) {
             }
         }
-
         infoView.setText(sb.toString());
-        if (!hdr) {
-            infoView.setTextColor(Color.parseColor("#FF6E6E"));
-            infoView.append("  ·  " + getString(R.string.hdr_test_not_hdr));
-        }
-        else {
-            infoView.setTextColor(Color.parseColor("#80FFFFFF"));
-        }
-    }
-
-    private static String fmt(float value) {
-        return String.format(Locale.US, "%.0f", value);
+        infoView.setTextColor(hdr ? Color.parseColor("#66FFFFFF") : Color.parseColor("#FF6E6E"));
     }
 
     private void saveAndFinish() {
@@ -615,7 +323,15 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         finish();
     }
 
-    private void show(TextView view, String text) {
-        view.setText(text);
+    @Override
+    protected void onResume() {
+        super.onResume();
+        handler.post(sampler);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        handler.removeCallbacks(sampler);
     }
 }

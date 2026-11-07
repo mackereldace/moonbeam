@@ -6,23 +6,10 @@
     android:layout_height="match_parent"
     android:background="@android:color/black">
 
-    <LinearLayout
+    <SurfaceView
+        android:id="@+id/hdrSurface"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="horizontal">
-
-        <SurfaceView
-            android:id="@+id/hdrSurface"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1" />
-
-        <SurfaceView
-            android:id="@+id/hdrSurfaceB"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1" />
-    </LinearLayout>
+        android:layout_height="match_parent" />
 
     <LinearLayout
         android:id="@+id/hdrPanel"

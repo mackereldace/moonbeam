@@ -9,6 +9,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE    := moonlight-core
 
 LOCAL_SRC_FILES := moonlight-common-c/src/AudioStream.c \
+                   hdr_canvas.cpp \
                    moonlight-common-c/src/ByteBuffer.c \
                    moonlight-common-c/src/Connection.c \
                    moonlight-common-c/src/ConnectionTester.c \
@@ -56,7 +57,7 @@ ifeq ($(NDK_DEBUG),1)
 LOCAL_CFLAGS += -DLC_DEBUG
 endif
 
-LOCAL_LDLIBS := -llog
+LOCAL_LDLIBS := -llog -landroid -lEGL -lGLESv3
 
 LOCAL_STATIC_LIBRARIES := libopus libcrypto cpufeatures
 LOCAL_LDFLAGS += -Wl,--exclude-libs,ALL

@@ -40,9 +40,10 @@ android {
         // 0.6.3  控制条改圆角卡片，处理系统栏 insets，按钮不再被小白条压住
         // 0.6.4  控制区缩成左下角小卡片，色块占满整屏
         // 0.6.5  去掉两块之间的 2px 黑色分隔条
+        // 0.7.0  HDR 测试改为原生 EGL/PQ 渲染：任意亮度、面积精确，删掉全部测试片
         // 1.0.0  首个正式版
-        versionName "0.6.5"
-        versionCode = 605
+        versionName "0.7.0"
+        versionCode = 700
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'

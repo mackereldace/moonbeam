@@ -144,6 +144,7 @@
     <string name="addpc_wrong_sitelocal">That address doesn\'t look right. You must use your router\'s public IP address for streaming over the Internet.</string>
 
     <!-- Preferences -->
+    <string name="hdr_test_no_pq">This device cannot render PQ content (no EGL BT2020/PQ)</string>
     <string name="hdr_test_ladder_hint">100 → 3200 nit, eight steps</string>
     <string name="hdr_test_mode_measure">Measure</string>
 
