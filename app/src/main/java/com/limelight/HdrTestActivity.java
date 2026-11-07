@@ -310,9 +310,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         }
         if (guarding) {
             if (dimmer) {
-                HdrProfileStore.set(this, slot, HdrProfileStore.FIELD_STABILITY, elapsedSeconds());
-                Toast.makeText(this, getString(R.string.hdr_test_saved_time, elapsedText(), slot + 1),
-                        Toast.LENGTH_LONG).show();
+                saveHoldTime();
             }
             else {
                 guardStartMillis = SystemClock.elapsedRealtime();
@@ -542,7 +540,27 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         infoView.setTextColor(hdr ? Color.parseColor("#66FFFFFF") : Color.parseColor("#FF6E6E"));
     }
 
+    /**
+     * Records how long the full-frame level held. A value below one second is meaningless and
+     * would read as "not measured", so it is clamped.
+     */
+    private void saveHoldTime() {
+        int seconds = Math.max(1, elapsedSeconds());
+        HdrProfileStore.set(this, slot, HdrProfileStore.FIELD_STABILITY, seconds);
+        Toast.makeText(this, getString(R.string.hdr_test_saved_time, secondsText(seconds), slot + 1),
+                Toast.LENGTH_LONG).show();
+    }
+
+    private static String secondsText(int seconds) {
+        return String.format(Locale.US, "%02d:%02d", seconds / 60, seconds % 60);
+    }
+
     private void saveAndFinish() {
+        if (guarding) {
+            // While the hold test is running the measurement in hand is the elapsed time itself.
+            saveHoldTime();
+            return;
+        }
         if (!finished) {
             Toast.makeText(this, R.string.hdr_test_finish_first, Toast.LENGTH_SHORT).show();
             return;
