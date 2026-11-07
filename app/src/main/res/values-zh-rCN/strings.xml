@@ -105,6 +105,14 @@
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
 
+    <string name="hdr_test_mode_peak">峰值</string>
+    <string name="hdr_test_mode_global">全局</string>
+    <string name="hdr_test_mode_black">黑位</string>
+    <string name="hdr_test_question_black">看得出这个方块吗？</string>
+    <string name="hdr_test_values_black">%1$s nit（黑底）</string>
+    <string name="hdr_test_progress_black">%1$d/%2$d · 黑位</string>
+    <string name="hdr_test_result_black">黑位 %1$s nit（%2$s–%3$s）</string>
+
     <string name="hdr_test_mode_grid">网格</string>
     <string name="hdr_test_mode_patch">方块</string>
     <string name="hdr_test_question_grid">还看得出格子吗？</string>

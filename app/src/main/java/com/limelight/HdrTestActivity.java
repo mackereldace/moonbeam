@@ -54,12 +54,18 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private TextView modeToggle;
     private View answersRow;
 
-    private static final int MODE_PATCH = 0;   // two 5% squares: peak luminance
-    private static final int MODE_GRID = 1;    // full-screen checkerboard: full-frame ceiling
-    private static final int MODE_LADDER = 2;  // eight bands, no measuring
+    private static final int MODE_PEAK = 0;    // two 5% squares: peak luminance
+    private static final int MODE_GLOBAL = 1;  // full-screen checkerboard: full-frame ceiling
+    private static final int MODE_BLACK = 2;   // dark patch on black: black level
+    private static final int MODE_LADDER = 3;  // eight bands, no measuring
+
+    private static final double BLACK_MIN_NITS = 0.001;
+    private static final double BLACK_MAX_NITS = 1.0;
+    private static final double BLACK_START_NITS = 0.05;
+    private static final int BLACK_STEPS = 8;
 
     private boolean ready;
-    private int mode = MODE_PATCH;
+    private int mode = MODE_PEAK;
 
     private double lowNits;
     private double highNits;
@@ -154,6 +160,14 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
                 leftX + side + gap, top, side, side, (float) rightNits);
     }
 
+    /** One patch on a black field: what a black-level search needs is an isolated patch. */
+    private void drawBlackPatch(double nits) {
+        int side = (int) Math.sqrt(PATCH_AREA * surfaceWidth * surfaceHeight);
+        int left = (surfaceWidth - side) / 2;
+        int top = (surfaceHeight - side) / 2;
+        HdrCanvas.nativeDraw(left, top, side, side, (float) nits);
+    }
+
     /** Full-screen checkerboard: cells alternate the candidate and the top of the range. */
     private void drawGrid(double candidate, double reference) {
         int cell = Math.max(32, surfaceWidth / 16);
@@ -173,8 +187,11 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         if (mode == MODE_LADDER) {
             drawLadder();
         }
-        else if (mode == MODE_GRID) {
+        else if (mode == MODE_GLOBAL) {
             drawGrid(finished ? peakNits : candidateNits, MAX_NITS);
+        }
+        else if (mode == MODE_BLACK) {
+            drawBlackPatch(finished ? peakNits : candidateNits);
         }
         else if (!finished) {
             drawPair(candidateNits, MAX_NITS);
@@ -189,7 +206,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private void startSearch() {
         lowNits = 0;
         highNits = 0;
-        candidateNits = START_NITS;
+        candidateNits = mode == MODE_BLACK ? BLACK_START_NITS : START_NITS;
         steps = 0;
         finished = false;
         ask();
@@ -197,7 +214,13 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
 
     private void ask() {
         steps++;
-        if (mode == MODE_GRID) {
+        if (mode == MODE_BLACK) {
+            valuesView.setText(getString(R.string.hdr_test_values_black, formatNits(candidateNits)));
+            progressView.setText(getString(R.string.hdr_test_progress_black, steps, BLACK_STEPS));
+            drawBlackPatch(candidateNits);
+            return;
+        }
+        if (mode == MODE_GLOBAL) {
             valuesView.setText(getString(R.string.hdr_test_values_grid,
                     Math.round(candidateNits), Math.round(MAX_NITS)));
             progressView.setText(getString(R.string.hdr_test_progress_grid, steps, MAX_STEPS));
@@ -222,6 +245,10 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         if (!ready || finished) {
             return;
         }
+        if (mode == MODE_BLACK) {
+            answerBlack(dimmer);
+            return;
+        }
         if (dimmer) {
             lowNits = candidateNits;
         }
@@ -243,12 +270,50 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         }
     }
 
+    /**
+     * Black level: the smallest luminance that is still visible against black.
+     * "I can see it" moves the ceiling down, "I cannot" moves the floor up.
+     */
+    private void answerBlack(boolean visible) {
+        if (visible) {
+            highNits = candidateNits;
+        }
+        else {
+            lowNits = candidateNits;
+        }
+        double low = lowNits > 0 ? lowNits : BLACK_MIN_NITS;
+        double high = highNits > 0 ? highNits : BLACK_MAX_NITS;
+        double next = Math.sqrt(low * high);
+        boolean converged = (lowNits > 0 && highNits > 0 && high / low < 1.05)
+                || Math.abs(next - candidateNits) < 1e-6;
+        candidateNits = next;
+        if (converged) {
+            finished = true;
+            peakNits = highNits > 0 ? highNits : next;
+            questionView.setText(getString(R.string.hdr_test_result_black,
+                    formatNits(peakNits), formatNits(low), formatNits(high)));
+            valuesView.setText("");
+            progressView.setText(getString(R.string.hdr_test_done, steps));
+            answersRow.setVisibility(View.GONE);
+            redraw();
+        }
+        else {
+            ask();
+        }
+    }
+
+    private static String formatNits(double nits) {
+        return nits < 1.0
+                ? String.format(Locale.US, "%.3f", nits)
+                : String.format(Locale.US, "%.0f", nits);
+    }
+
     private void finishSearch() {
         finished = true;
         double low = lowNits > 0 ? lowNits : MIN_NITS;
         double high = highNits > 0 ? highNits : MAX_NITS;
         peakNits = Math.sqrt(low * high);
-        questionView.setText(getString(mode == MODE_GRID
+        questionView.setText(getString(mode == MODE_GLOBAL
                 ? R.string.hdr_test_result_grid : R.string.hdr_test_result,
                 Math.round(peakNits), Math.round(low), Math.round(high)));
         valuesView.setText("");
@@ -258,7 +323,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     }
 
     private void toggleMode() {
-        mode = (mode + 1) % 3;
+        mode = (mode + 1) % 4;
         applyMode();
     }
 
@@ -269,20 +334,26 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         progressView.setVisibility(measuring ? View.VISIBLE : View.GONE);
 
         switch (mode) {
-            case MODE_PATCH:
-                modeToggle.setText(R.string.hdr_test_mode_grid);
+            case MODE_PEAK:
+                modeToggle.setText(R.string.hdr_test_mode_global);
                 questionView.setText(R.string.hdr_test_question);
                 ((TextView) findViewById(R.id.hdrAnswerDimmer)).setText(R.string.hdr_test_answer_dimmer);
                 ((TextView) findViewById(R.id.hdrAnswerSame)).setText(R.string.hdr_test_answer_same);
                 break;
-            case MODE_GRID:
-                modeToggle.setText(R.string.hdr_test_mode_ladder);
+            case MODE_GLOBAL:
+                modeToggle.setText(R.string.hdr_test_mode_black);
                 questionView.setText(R.string.hdr_test_question_grid);
                 ((TextView) findViewById(R.id.hdrAnswerDimmer)).setText(R.string.hdr_test_answer_visible);
                 ((TextView) findViewById(R.id.hdrAnswerSame)).setText(R.string.hdr_test_answer_invisible);
                 break;
+            case MODE_BLACK:
+                modeToggle.setText(R.string.hdr_test_mode_ladder);
+                questionView.setText(R.string.hdr_test_question_black);
+                ((TextView) findViewById(R.id.hdrAnswerDimmer)).setText(R.string.hdr_test_answer_visible);
+                ((TextView) findViewById(R.id.hdrAnswerSame)).setText(R.string.hdr_test_answer_invisible);
+                break;
             default:
-                modeToggle.setText(R.string.hdr_test_mode_patch);
+                modeToggle.setText(R.string.hdr_test_mode_peak);
                 questionView.setText(R.string.hdr_test_ladder_hint);
                 drawLadder();
                 return;

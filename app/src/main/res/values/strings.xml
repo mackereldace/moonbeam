@@ -145,6 +145,14 @@
 
     <!-- Preferences -->
 
+    <string name="hdr_test_mode_peak">Peak</string>
+    <string name="hdr_test_mode_global">Full frame</string>
+    <string name="hdr_test_mode_black">Black</string>
+    <string name="hdr_test_question_black">Can you see the square?</string>
+    <string name="hdr_test_values_black">%1$s nit on black</string>
+    <string name="hdr_test_progress_black">%1$d/%2$d · black level</string>
+    <string name="hdr_test_result_black">Black level %1$s nit (%2$s–%3$s)</string>
+
     <string name="hdr_test_mode_grid">Grid</string>
     <string name="hdr_test_mode_patch">Squares</string>
     <string name="hdr_test_question_grid">Can you still see the grid?</string>
