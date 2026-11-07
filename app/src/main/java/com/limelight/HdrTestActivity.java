@@ -133,11 +133,12 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         Surface surface = holder.getSurface();
         surfaceWidth = surfaceView.getWidth();
         surfaceHeight = surfaceView.getHeight();
-        ready = HdrCanvas.nativeInit(surface, surfaceWidth, surfaceHeight);
+        int initResult = HdrCanvas.nativeInit(surface, surfaceWidth, surfaceHeight);
+        ready = initResult == 0;
         if (!ready) {
-            valuesView.setText(R.string.hdr_test_no_pq);
+            valuesView.setText(getString(R.string.hdr_test_no_pq, initResult, describeInit(initResult)));
             valuesView.setTextColor(Color.parseColor("#FF6E6E"));
-            LimeLog.severe("HDR test: surface is not BT2020/PQ capable");
+            LimeLog.severe("HDR test: init failed at step " + initResult);
             return;
         }
         startSearch();
@@ -157,6 +158,23 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         if (ready) {
             HdrCanvas.nativeRelease();
             ready = false;
+        }
+    }
+
+    private String describeInit(int code) {
+        switch (code) {
+            case 1:
+                return getString(R.string.hdr_init_no_display);
+            case 2:
+                return getString(R.string.hdr_init_no_config);
+            case 3:
+                return getString(R.string.hdr_init_no_context);
+            case 4:
+                return getString(R.string.hdr_init_no_surface);
+            case 6:
+                return getString(R.string.hdr_init_shader);
+            default:
+                return getString(R.string.hdr_init_no_pq);
         }
     }
 

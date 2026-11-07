@@ -145,6 +145,14 @@
 
     <!-- Preferences -->
 
+    <string name="hdr_test_no_pq">HDR renderer unavailable (step %1$d: %2$s)</string>
+    <string name="hdr_init_no_display">no EGL display</string>
+    <string name="hdr_init_no_config">no 10-bit EGL config</string>
+    <string name="hdr_init_no_context">no GLES3 context</string>
+    <string name="hdr_init_no_surface">no window surface</string>
+    <string name="hdr_init_no_pq">driver offers no BT2020/PQ</string>
+    <string name="hdr_init_shader">shader setup failed</string>
+
     <plurals name="hdr_profiles_summary">
         <item quantity="one">What the display reports, plus %d measurement slot</item>
         <item quantity="other">What the display reports, plus %d measurement slots</item>
@@ -173,7 +181,6 @@
     <string name="hdr_test_values_grid">%1$d → %2$d nit, full screen</string>
     <string name="hdr_test_progress_grid">%1$d/%2$d · full screen</string>
     <string name="hdr_test_result_grid">Full-frame ceiling %1$d nit · %2$d–%3$d</string>
-    <string name="hdr_test_no_pq">This device cannot render PQ content (no EGL BT2020/PQ)</string>
     <string name="hdr_test_ladder_hint">100 → 3200 nit, eight steps</string>
     <string name="hdr_test_mode_measure">Measure</string>
 

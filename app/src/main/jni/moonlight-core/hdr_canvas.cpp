@@ -90,66 +90,82 @@ bool hasExtension(const char *list, const char *name) {
 
 extern "C" {
 
-JNIEXPORT jboolean JNICALL
+JNIEXPORT jint JNICALL
 Java_com_limelight_hdr_HdrCanvas_nativeInit(JNIEnv *env, jclass, jobject surface, jint width,
                                             jint height) {
   if (surface == nullptr || width <= 0 || height <= 0) {
-    return JNI_FALSE;
+    return 1;
   }
   g_width = width;
   g_height = height;
 
   g_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
   if (g_dpy == EGL_NO_DISPLAY || !eglInitialize(g_dpy, nullptr, nullptr)) {
-    LOGE("no EGL display");
-    return JNI_FALSE;
+    return 1;
   }
-
   const char *ext = eglQueryString(g_dpy, EGL_EXTENSIONS);
+  LOGI("EGL extensions: %s", ext != nullptr ? ext : "(null)");
   bool pqSupported = hasExtension(ext, "EGL_EXT_gl_colorspace_bt2020_pq");
-  LOGI("EGL PQ colorspace: %s", pqSupported ? "yes" : "no");
+  LOGI("bt2020_pq supported: %d", pqSupported);
 
-  const EGLint configAttribs[] = {
+  // 10-bit first: PQ below that quantises badly. Fall back to 8-bit only to report why.
+  const EGLint tenBit[] = {
       EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
-      EGL_RED_SIZE, 10,
-      EGL_GREEN_SIZE, 10,
-      EGL_BLUE_SIZE, 10,
-      EGL_ALPHA_SIZE, 2,
+      EGL_RED_SIZE, 10, EGL_GREEN_SIZE, 10, EGL_BLUE_SIZE, 10,
+      EGL_NONE};
+  const EGLint eightBit[] = {
+      EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
+      EGL_RED_SIZE, 8, EGL_GREEN_SIZE, 8, EGL_BLUE_SIZE, 8,
       EGL_NONE};
   EGLConfig config;
   EGLint numConfigs = 0;
-  if (!eglChooseConfig(g_dpy, configAttribs, &config, 1, &numConfigs) || numConfigs == 0) {
-    LOGE("no 10-bit EGL config");
-    return JNI_FALSE;
+  if (!eglChooseConfig(g_dpy, tenBit, &config, 1, &numConfigs) || numConfigs == 0) {
+    LOGI("no 10-bit EGL config, trying 8-bit");
+    if (!eglChooseConfig(g_dpy, eightBit, &config, 1, &numConfigs) || numConfigs == 0) {
+      return 2;
+    }
+    return 2;  // 8-bit is not usable for this test; report instead of faking it
   }
 
   const EGLint contextAttribs[] = {EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE};
   g_ctx = eglCreateContext(g_dpy, config, EGL_NO_CONTEXT, contextAttribs);
   if (g_ctx == EGL_NO_CONTEXT) {
-    LOGE("no GLES3 context");
-    return JNI_FALSE;
+    return 3;
   }
 
   g_win = ANativeWindow_fromSurface(env, surface);
-  g_surf = eglCreateWindowSurface(g_dpy, config, g_win, nullptr);
-  if (g_surf == EGL_NO_SURFACE) {
-    LOGE("no window surface");
-    return JNI_FALSE;
+  if (g_win == nullptr) {
+    return 4;
   }
 
+  // The colour space is a surface attribute: request it at creation, which is what the
+  // extension actually defines, and fall back to setting it afterwards for drivers that only
+  // honour the attribute form.
   if (pqSupported) {
-    EGLBoolean applied = eglSurfaceAttrib(g_dpy, g_surf, EGL_GL_COLORSPACE_KHR,
-                                          EGL_GL_COLORSPACE_BT2020_PQ_EXT);
-    LOGI("PQ colorspace applied: %d", applied);
-    if (!applied) {
+    const EGLint pqAttribs[] = {
+        EGL_GL_COLORSPACE_KHR, EGL_GL_COLORSPACE_BT2020_PQ_EXT, EGL_NONE};
+    g_surf = eglCreateWindowSurface(g_dpy, config, g_win, pqAttribs);
+  }
+  if (g_surf == EGL_NO_SURFACE) {
+    g_surf = eglCreateWindowSurface(g_dpy, config, g_win, nullptr);
+    if (g_surf == EGL_NO_SURFACE) {
+      return 4;
+    }
+    if (pqSupported && !eglSurfaceAttrib(g_dpy, g_surf, EGL_GL_COLORSPACE_KHR,
+                                         EGL_GL_COLORSPACE_BT2020_PQ_EXT)) {
+      LOGI("eglSurfaceAttrib PQ failed");
       pqSupported = false;
     }
   }
+  LOGI("PQ colorspace requested: %d", pqSupported);
+  if (!pqSupported) {
+    return 5;
+  }
 
   if (!eglMakeCurrent(g_dpy, g_surf, g_surf, g_ctx)) {
-    LOGE("eglMakeCurrent failed");
-    return JNI_FALSE;
+    return 3;
   }
 
   char fragment[2048];
@@ -157,7 +173,7 @@ Java_com_limelight_hdr_HdrCanvas_nativeInit(JNIEnv *env, jclass, jobject surface
   GLuint vs = compile(GL_VERTEX_SHADER, kVertex);
   GLuint fs = compile(GL_FRAGMENT_SHADER, fragment);
   if (vs == 0 || fs == 0) {
-    return JNI_FALSE;
+    return 6;
   }
   g_prog = glCreateProgram();
   glAttachShader(g_prog, vs);
@@ -168,8 +184,7 @@ Java_com_limelight_hdr_HdrCanvas_nativeInit(JNIEnv *env, jclass, jobject surface
   GLint linked = 0;
   glGetProgramiv(g_prog, GL_LINK_STATUS, &linked);
   if (!linked) {
-    LOGE("program link failed");
-    return JNI_FALSE;
+    return 6;
   }
   g_rectLoc = glGetUniformLocation(g_prog, "uRect");
   g_nitsLoc = glGetUniformLocation(g_prog, "uNits");
@@ -180,8 +195,7 @@ Java_com_limelight_hdr_HdrCanvas_nativeInit(JNIEnv *env, jclass, jobject surface
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
   eglSwapBuffers(g_dpy, g_surf);
-
-  return pqSupported ? JNI_TRUE : JNI_FALSE;
+  return 0;
 }
 
 // Draws one patch of `nits` inside the given pixel rectangle; the rest of the surface stays black.

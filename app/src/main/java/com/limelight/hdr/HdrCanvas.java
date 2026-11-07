@@ -25,10 +25,11 @@ public final class HdrCanvas {
     /**
      * Set up the renderer on a surface.
      *
-     * @return true when the surface really is in BT2020/PQ; false means the driver lacks
-     *         EGL_EXT_gl_colorspace_bt2020_pq and anything drawn here is not HDR.
+     * @return 0 on success, otherwise the step that failed: 1 no display, 2 no 10-bit config,
+     *         3 no context, 4 no window surface, 5 the driver does not offer BT2020/PQ,
+     *         6 shader setup failed.
      */
-    public static native boolean nativeInit(Surface surface, int width, int height);
+    public static native int nativeInit(Surface surface, int width, int height);
 
     /** Fill one pixel rectangle with a patch of {@code nits}; the rest stays black. */
     public static native void nativeDraw(int x, int y, int width, int height, float nits);
