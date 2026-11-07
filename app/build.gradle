@@ -50,9 +50,10 @@ android {
         // 0.7.7  去掉阶梯；按钮上三下三对齐；显示不再避让摄像头；存档顺序改峰值/黑位/全局；默认竖屏可横屏
         // 0.7.8  采用→保存且不退出；全局测完转计时看掉亮度；手动峰值改为选择安卓预设或槽位
         // 0.7.9  计时保存不足 1 秒按 1 秒记（0 会被当成未测）；底部保存也写入计时
+        // 0.7.10 修中文存档行缺第 5 个占位符（看不见维持时长）；计时模式记录 HDR/SDR 比值曲线
         // 1.0.0  首个正式版
-        versionName "0.7.9"
-        versionCode = 709
+        versionName "0.7.10"
+        versionCode = 710
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'

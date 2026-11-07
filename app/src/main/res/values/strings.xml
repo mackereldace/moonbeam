@@ -144,6 +144,9 @@
     <string name="addpc_wrong_sitelocal">That address doesn\'t look right. You must use your router\'s public IP address for streaming over the Internet.</string>
 
     <!-- Preferences -->
+    <string name="hdr_test_guard_ratio">ratio %1$s→%2$s (min %3$s)</string>
+    <string name="hdr_profiles_slot_ratio"> · ratio %1$s</string>
+    <string name="hdr_test_saved_ratio">Ratio trace %1$s recorded</string>
 
     <string name="hdr_profiles_slot_line">Slot %1$d: peak %2$s · black %3$s · full %4$s · held %5$s</string>
     <string name="hdr_profile_source">HDR values in use</string>

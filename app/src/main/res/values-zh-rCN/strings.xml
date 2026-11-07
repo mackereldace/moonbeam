@@ -104,6 +104,9 @@
     <string name="addpc_enter_ip">请输入一个IP地址</string>
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
+    <string name="hdr_test_guard_ratio">比值 %1$s→%2$s（最低 %3$s）</string>
+    <string name="hdr_profiles_slot_ratio"> · 比值 %1$s</string>
+    <string name="hdr_test_saved_ratio">比值曲线 %1$s 一并记录</string>
 
         <string name="hdr_profile_source">使用的 HDR 数值</string>
     <string name="hdr_profile_source_summary">安卓报告值，或某个实测槽位</string>
@@ -128,7 +131,7 @@
     <string name="title_hdr_profiles">HDR 实测存档</string>
     <string name="summary_hdr_profiles">查看系统报告值与已写入的槽位</string>
     <string name="hdr_profiles_system_line">系统报告：峰值 %1$s · 黑位 %2$s · 全屏 %3$s nit</string>
-    <string name="hdr_profiles_slot_line">槽 %1$d：峰值 %2$s · 黑位 %3$s · 全局 %4$s</string>
+    <string name="hdr_profiles_slot_line">槽 %1$d：峰值 %2$s · 黑位 %3$s · 全局 %4$s · 维持 %5$s</string>
     <string name="hdr_test_slot">槽 %1$d</string>
     <string name="hdr_test_saved_slot">%1$s 已写入槽 %2$d</string>
 

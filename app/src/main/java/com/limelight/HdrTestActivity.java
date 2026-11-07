@@ -59,6 +59,9 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private boolean guarding;
     private long guardStartMillis;
     private double guardDimNits;
+    private float ratioFirst;
+    private float ratioLast;
+    private float ratioMin;
 
     private static final int MODE_PEAK = 0;    // two 5% squares: peak luminance
     private static final int MODE_GLOBAL = 1;  // full-screen checkerboard: full-frame ceiling
@@ -420,6 +423,9 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         guarding = true;
         guardStartMillis = SystemClock.elapsedRealtime();
         guardDimNits = peakNits * 0.8;
+        ratioFirst = currentRatio();
+        ratioLast = ratioFirst;
+        ratioMin = ratioFirst;
         answersRow.setVisibility(View.VISIBLE);
         valuesView.setVisibility(View.VISIBLE);
         valuesView.setText(getString(R.string.hdr_test_guard_hint, Math.round(guardDimNits)));
@@ -440,10 +446,39 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
             if (!guarding) {
                 return;
             }
-            progressView.setText(getString(R.string.hdr_test_guard_timer, elapsedText()));
+            float ratio = currentRatio();
+            if (ratio > 0f) {
+                if (ratioFirst <= 0f) {
+                    ratioFirst = ratio;
+                }
+                ratioLast = ratio;
+                if (ratioMin <= 0f || ratio < ratioMin) {
+                    ratioMin = ratio;
+                }
+            }
+            progressView.setText(getString(R.string.hdr_test_guard_timer, elapsedText())
+                    + "  ·  " + getString(R.string.hdr_test_guard_ratio,
+                    ratioText(ratioFirst), ratioText(ratioLast), ratioText(ratioMin)));
             handler.postDelayed(this, 500);
         }
     };
+
+    /** What the display currently reports as its HDR/SDR ratio; 0 when unavailable. */
+    private float currentRatio() {
+        try {
+            Display display = getWindowManager().getDefaultDisplay();
+            if (Build.VERSION.SDK_INT >= 34 && display.isHdrSdrRatioAvailable()) {
+                return display.getHdrSdrRatio();
+            }
+        }
+        catch (RuntimeException ignored) {
+        }
+        return 0f;
+    }
+
+    private static String ratioText(float ratio) {
+        return ratio <= 0f ? "-" : String.format(Locale.US, "%.2f", ratio);
+    }
 
     private int elapsedSeconds() {
         return (int) ((SystemClock.elapsedRealtime() - guardStartMillis) / 1000);
@@ -547,6 +582,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private void saveHoldTime() {
         int seconds = Math.max(1, elapsedSeconds());
         HdrProfileStore.set(this, slot, HdrProfileStore.FIELD_STABILITY, seconds);
+        HdrProfileStore.setRatio(this, slot, ratioText(ratioFirst) + "→" + ratioText(ratioLast));
         Toast.makeText(this, getString(R.string.hdr_test_saved_time, secondsText(seconds), slot + 1),
                 Toast.LENGTH_LONG).show();
     }
