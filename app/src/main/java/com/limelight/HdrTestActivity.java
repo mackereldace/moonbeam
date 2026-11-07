@@ -404,6 +404,15 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         questionView.setText(getString(mode == MODE_GLOBAL
                 ? R.string.hdr_test_result_grid : R.string.hdr_test_result,
                 Math.round(peakNits), Math.round(low), Math.round(high)));
+        if (mode == MODE_PEAK) {
+            // The ratio is peak over SDR white, so the measured ceiling divided by the ratio is
+            // what the system must be treating as SDR white right now.
+            float ratio = currentRatio();
+            if (ratio > 0f) {
+                valuesView.setText(getString(R.string.hdr_test_implied_white,
+                        Math.round(peakNits / ratio)));
+            }
+        }
         if (mode == MODE_GLOBAL) {
             startGuarding();
             return;
