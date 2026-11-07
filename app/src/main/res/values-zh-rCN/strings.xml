@@ -120,7 +120,7 @@
     <string name="title_hdr_profiles">HDR 实测存档</string>
     <string name="summary_hdr_profiles">查看系统报告值与已写入的槽位</string>
     <string name="hdr_profiles_system_line">系统报告：峰值 %1$s · 黑位 %2$s · 全屏 %3$s nit</string>
-    <string name="hdr_profiles_slot_line">槽 %1$d：峰值 %2$s · 全局 %3$s · 黑位 %4$s</string>
+    <string name="hdr_profiles_slot_line">槽 %1$d：峰值 %2$s · 黑位 %3$s · 全局 %4$s</string>
     <string name="hdr_test_slot">槽 %1$d</string>
     <string name="hdr_test_saved_slot">%1$s 已写入槽 %2$d</string>
 

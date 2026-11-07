@@ -45,7 +45,6 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private static final double MIN_NITS = 100;
     private static final double MAX_NITS = 10000;
     private static final int MAX_STEPS = 9;
-    private static final float[] LADDER_NITS = {100, 203, 400, 700, 1000, 1600, 2400, 3200};
 
     private SurfaceView surfaceView;
     private TextView infoView;
@@ -60,7 +59,6 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private static final int MODE_PEAK = 0;    // two 5% squares: peak luminance
     private static final int MODE_GLOBAL = 1;  // full-screen checkerboard: full-frame ceiling
     private static final int MODE_BLACK = 2;   // dark patch on black: black level
-    private static final int MODE_LADDER = 3;  // eight bands, no measuring
 
     private static final double BLACK_MIN_NITS = 0.001;
     private static final double BLACK_MAX_NITS = 1.0;
@@ -100,6 +98,12 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             getWindow().setColorMode(ActivityInfo.COLOR_MODE_HDR);
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            WindowManager.LayoutParams attrs = getWindow().getAttributes();
+            attrs.layoutInDisplayCutoutMode =
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+            getWindow().setAttributes(attrs);
+        }
 
         setContentView(R.layout.activity_hdr_test);
         applyWindowInsets();
@@ -112,8 +116,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         modeButtons = new TextView[] {
                 findViewById(R.id.hdrModePeak),
                 findViewById(R.id.hdrModeGlobal),
-                findViewById(R.id.hdrModeBlack),
-                findViewById(R.id.hdrModeLadder)};
+                findViewById(R.id.hdrModeBlack)};
         for (int i = 0; i < modeButtons.length; i++) {
             final int index = i;
             modeButtons[i].setOnClickListener(v -> {
@@ -164,6 +167,26 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         if (ready) {
             redraw();
         }
+        else if (surfaceValid(holder)) {
+            // Rotation tears the surface down; set it up again and keep the search where it was.
+            int result = HdrCanvas.nativeInit(holder.getSurface(), width, height);
+            ready = result == 0;
+            if (!ready) {
+                valuesView.setText(getString(R.string.hdr_test_no_pq, result, describeInit(result)));
+                valuesView.setTextColor(Color.parseColor("#FF6E6E"));
+                return;
+            }
+            if (steps == 0) {
+                startSearch();
+            }
+            else {
+                redraw();
+            }
+        }
+    }
+
+    private static boolean surfaceValid(SurfaceHolder holder) {
+        return holder.getSurface() != null && holder.getSurface().isValid();
     }
 
     @Override
@@ -216,20 +239,11 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         HdrCanvas.nativeDrawGrid(cell, (float) reference, (float) candidate);
     }
 
-    private void drawLadder() {
-        int top = (int) (surfaceHeight * 0.1);
-        int height = (int) (surfaceHeight * 0.8);
-        HdrCanvas.nativeDrawLadder(top, height, LADDER_NITS);
-    }
-
     private void redraw() {
         if (!ready) {
             return;
         }
-        if (mode == MODE_LADDER) {
-            drawLadder();
-        }
-        else if (mode == MODE_GLOBAL) {
+        if (mode == MODE_GLOBAL) {
             drawGrid(finished ? peakNits : candidateNits, MAX_NITS);
         }
         else if (mode == MODE_BLACK) {
@@ -376,11 +390,9 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private void applyMode() {
         highlightMode();
 
-        boolean measuring = mode != MODE_LADDER;
-        answersRow.setVisibility(measuring ? View.VISIBLE : View.GONE);
-        valuesView.setVisibility(measuring ? View.VISIBLE : View.GONE);
-        progressView.setVisibility(measuring ? View.VISIBLE : View.GONE);
-        findViewById(R.id.hdrSave).setAlpha(measuring ? 1f : 0.4f);
+        answersRow.setVisibility(View.VISIBLE);
+        valuesView.setVisibility(View.VISIBLE);
+        progressView.setVisibility(View.VISIBLE);
 
         switch (mode) {
             case MODE_PEAK:
@@ -399,9 +411,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
                 ((TextView) findViewById(R.id.hdrAnswerSame)).setText(R.string.hdr_test_answer_invisible);
                 break;
             default:
-                questionView.setText(R.string.hdr_test_ladder_hint);
-                drawLadder();
-                return;
+                break;
         }
         startSearch();
     }
@@ -422,16 +432,18 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
             int left;
             int right;
             int bottom;
+            // Only the navigation bar is respected. The cutout is deliberately ignored: the
+            // fields are what is being judged, and shrinking them to dodge a camera hole puts
+            // black margins inside the thing that is supposed to be uniform.
             if (Build.VERSION.SDK_INT >= 30) {
-                android.graphics.Insets bars = insets.getInsets(
-                        WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
-                left = bars.left;
-                right = bars.right;
+                android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.navigationBars());
+                left = 0;
+                right = 0;
                 bottom = bars.bottom;
             }
             else {
-                left = insets.getSystemWindowInsetLeft();
-                right = insets.getSystemWindowInsetRight();
+                left = 0;
+                right = 0;
                 bottom = insets.getSystemWindowInsetBottom();
             }
             view.setPadding(left, 0, right, bottom);

@@ -47,9 +47,10 @@ android {
         // 0.7.4  PQ 初始化带失败码；色彩空间改为创建 surface 时申请；10-bit 配置不再要求 alpha
         // 0.7.5  峰值改为一对方块紧贴（无中缝）
         // 0.7.6  四项改成常驻分段按钮（峰值/全局/黑位/阶梯），当前项高亮，不再靠循环切换
+        // 0.7.7  去掉阶梯；按钮上三下三对齐；显示不再避让摄像头；存档顺序改峰值/黑位/全局；默认竖屏可横屏
         // 1.0.0  首个正式版
-        versionName "0.7.6"
-        versionCode = 706
+        versionName "0.7.7"
+        versionCode = 707
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'

@@ -127,8 +127,9 @@
         <activity
             android:name=".HdrTestActivity"
             android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
-            android:screenOrientation="landscape"
-            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:screenOrientation="user"
+            android:resizeableActivity="true"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             android:exported="false" />
         <activity
             android:name=".preferences.StreamSettings"

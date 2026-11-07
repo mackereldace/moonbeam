@@ -67,6 +67,7 @@ public final class HdrProfileStore {
     /** One line per slot, for the dialog in Settings. */
     public static String describe(Context context, HdrDisplayCapabilities caps) {
         StringBuilder sb = new StringBuilder();
+        // Same order Android reports it in: peak, black, full frame.
         sb.append(context.getString(R.string.hdr_profiles_system_line,
                 caps.brightness == null ? "-" : round(caps.brightness.maxNits),
                 caps.brightness == null ? "-" : decimals(caps.brightness.minNits),
@@ -75,8 +76,8 @@ public final class HdrProfileStore {
         for (int slot = 0; slot < SLOT_COUNT; slot++) {
             sb.append(context.getString(R.string.hdr_profiles_slot_line, slot + 1,
                     value(get(context, slot, FIELD_PEAK), true),
-                    value(get(context, slot, FIELD_GLOBAL), true),
-                    value(get(context, slot, FIELD_BLACK), false)));
+                    value(get(context, slot, FIELD_BLACK), false),
+                    value(get(context, slot, FIELD_GLOBAL), true)));
             sb.append('\n');
         }
         return sb.toString().trim();
