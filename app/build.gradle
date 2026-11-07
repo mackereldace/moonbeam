@@ -29,9 +29,10 @@ android {
         // 0.5.4  修二分模式无法播放：pairs.mp4 段长算错（0.5s/段，总长 15.5s），seek 越界
         // 0.5.5  二分改为双画面 + 对数二分：100↔10000 nit 收敛到真峰值
         // 0.5.6  修二分渲染：档位片改全 I 帧 1fps，每块只开一次解码器，surface 就绪再画
+        // 0.5.7  色块改为满宽条带，左右两块在中缝直接相接，便于直接比较
         // 1.0.0  首个正式版
-        versionName "0.5.6"
-        versionCode = 506
+        versionName "0.5.7"
+        versionCode = 507
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'

@@ -107,7 +107,7 @@
 
     <string name="hdr_test_mode_pair">二分查找峰值</string>
     <string name="hdr_test_mode_ladder">回到阶梯</string>
-    <string name="hdr_test_pair_hint">两边一样亮吗？分得开就把左边抬高，分不开就把右边压低。</string>
+    <string name="hdr_test_pair_hint">左边是下限、右边是上限。分得开就抬高左边，分不开就压低右边。</string>
     <string name="hdr_test_pair_diff">分得开</string>
     <string name="hdr_test_pair_same">一样</string>
     <string name="hdr_test_pair_progress">第 %1$d 步：%2$d 与 %3$d nit</string>
