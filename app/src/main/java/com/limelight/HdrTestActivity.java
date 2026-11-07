@@ -306,9 +306,8 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         else {
             valuesView.setText(getString(R.string.hdr_test_values,
                     Math.round(candidateNits), Math.round(MAX_NITS)));
-            progressView.setText(atFullHeadroom
-                    ? getString(R.string.hdr_test_progress, steps, MAX_STEPS, Math.round(areaPercent()))
-                    : getString(R.string.hdr_test_wait_headroom, ratioText(ratioHigh)));
+            progressView.setText(getString(R.string.hdr_test_progress, steps, MAX_STEPS,
+                    Math.round(areaPercent())));
             drawPair(candidateNits, MAX_NITS);
         }
     }
@@ -543,17 +542,6 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         return 0f;
     }
 
-    /**
-     * Blocking the answer buttons while the system compresses is deliberate: in that state the
-     * two fields separate all the way down, so every answer is "yes" and the search converges on
-     * the compression curve instead of the panel.
-     */
-    private void setAnswerEnabled(boolean enabled) {
-        if (!guarding) {
-            answersRow.setAlpha(enabled ? 1f : 0.35f);
-        }
-    }
-
     /** Highest ratio the display can report; 0 when the API is unavailable. */
     private float highestRatio() {
         try {
@@ -701,7 +689,6 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         if (ratio > 0f && ratioHigh > 0f) {
             boolean compressed = ratioRecent > 0f && ratio < ratioRecent * 0.98f;
             atFullHeadroom = !compressed;
-            setAnswerEnabled(!compressed);
             sb.append("  ·  ").append(getString(R.string.hdr_test_info_ratio_pair,
                     String.format(Locale.US, "%.2f", ratio),
                     String.format(Locale.US, "%.2f", ratioHigh)));
