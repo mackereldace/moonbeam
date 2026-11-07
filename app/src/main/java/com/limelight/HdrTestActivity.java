@@ -52,7 +52,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private TextView questionView;
     private TextView valuesView;
     private TextView progressView;
-    private TextView modeToggle;
+    private TextView[] modeButtons;
     private View answersRow;
     private TextView slotView;
     private int slot = 0;
@@ -109,7 +109,20 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         questionView = findViewById(R.id.hdrQuestion);
         valuesView = findViewById(R.id.hdrValues);
         progressView = findViewById(R.id.hdrProgress);
-        modeToggle = findViewById(R.id.hdrMode);
+        modeButtons = new TextView[] {
+                findViewById(R.id.hdrModePeak),
+                findViewById(R.id.hdrModeGlobal),
+                findViewById(R.id.hdrModeBlack),
+                findViewById(R.id.hdrModeLadder)};
+        for (int i = 0; i < modeButtons.length; i++) {
+            final int index = i;
+            modeButtons[i].setOnClickListener(v -> {
+                if (mode != index) {
+                    mode = index;
+                    applyMode();
+                }
+            });
+        }
         slotView = findViewById(R.id.hdrSlot);
         slotView.setText(getString(R.string.hdr_test_slot, slot + 1));
         slotView.setOnClickListener(v -> {
@@ -119,7 +132,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         answersRow = findViewById(R.id.hdrAnswers);
 
         surfaceView.getHolder().addCallback(this);
-        modeToggle.setOnClickListener(v -> toggleMode());
+        highlightMode();
         findViewById(R.id.hdrAnswerDimmer).setOnClickListener(v -> answer(true));
         findViewById(R.id.hdrAnswerSame).setOnClickListener(v -> answer(false));
         findViewById(R.id.hdrSave).setOnClickListener(v -> saveAndFinish());
@@ -259,7 +272,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
             valuesView.setText(getString(R.string.hdr_test_values,
                     Math.round(candidateNits), Math.round(MAX_NITS)));
             progressView.setText(getString(R.string.hdr_test_progress, steps, MAX_STEPS,
-                    Math.round(areaPercent()), Math.round(areaPercent() * 2)));
+                    Math.round(areaPercent())));
             drawPair(candidateNits, MAX_NITS);
         }
     }
@@ -351,38 +364,41 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         redraw();
     }
 
-    private void toggleMode() {
-        mode = (mode + 1) % 4;
-        applyMode();
+    private void highlightMode() {
+        for (int i = 0; i < modeButtons.length; i++) {
+            boolean active = i == mode;
+            modeButtons[i].setBackgroundResource(active
+                    ? R.drawable.bg_button_primary : R.drawable.bg_button_secondary);
+            modeButtons[i].setTextColor(active ? Color.WHITE : Color.parseColor("#99FFFFFF"));
+        }
     }
 
     private void applyMode() {
+        highlightMode();
+
         boolean measuring = mode != MODE_LADDER;
         answersRow.setVisibility(measuring ? View.VISIBLE : View.GONE);
         valuesView.setVisibility(measuring ? View.VISIBLE : View.GONE);
         progressView.setVisibility(measuring ? View.VISIBLE : View.GONE);
+        findViewById(R.id.hdrSave).setAlpha(measuring ? 1f : 0.4f);
 
         switch (mode) {
             case MODE_PEAK:
-                modeToggle.setText(R.string.hdr_test_mode_global);
                 questionView.setText(R.string.hdr_test_question);
                 ((TextView) findViewById(R.id.hdrAnswerDimmer)).setText(R.string.hdr_test_answer_dimmer);
                 ((TextView) findViewById(R.id.hdrAnswerSame)).setText(R.string.hdr_test_answer_same);
                 break;
             case MODE_GLOBAL:
-                modeToggle.setText(R.string.hdr_test_mode_black);
                 questionView.setText(R.string.hdr_test_question_grid);
                 ((TextView) findViewById(R.id.hdrAnswerDimmer)).setText(R.string.hdr_test_answer_visible);
                 ((TextView) findViewById(R.id.hdrAnswerSame)).setText(R.string.hdr_test_answer_invisible);
                 break;
             case MODE_BLACK:
-                modeToggle.setText(R.string.hdr_test_mode_ladder);
                 questionView.setText(R.string.hdr_test_question_black);
                 ((TextView) findViewById(R.id.hdrAnswerDimmer)).setText(R.string.hdr_test_answer_visible);
                 ((TextView) findViewById(R.id.hdrAnswerSame)).setText(R.string.hdr_test_answer_invisible);
                 break;
             default:
-                modeToggle.setText(R.string.hdr_test_mode_peak);
                 questionView.setText(R.string.hdr_test_ladder_hint);
                 drawLadder();
                 return;

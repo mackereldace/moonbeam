@@ -147,7 +147,7 @@
     <string name="hdr_test_answer_dimmer">更暗</string>
     <string name="hdr_test_answer_same">一样亮</string>
     <string name="hdr_test_values">%1$d → %2$d nit</string>
-    <string name="hdr_test_progress">%1$d/%2$d · %3$d–%4$d</string>
+    <string name="hdr_test_progress">第 %1$d/%2$d 步 · 每块 %3$d%%</string>
     <string name="hdr_test_result">峰值 %1$d nit · %2$d–%3$d</string>
     <string name="hdr_test_done">%1$d 步完成</string>
     <string name="hdr_test_finish_first">先答完这一轮</string>

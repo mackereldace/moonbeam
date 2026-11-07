@@ -188,7 +188,7 @@
     <string name="hdr_test_answer_dimmer">Dimmer</string>
     <string name="hdr_test_answer_same">Same</string>
     <string name="hdr_test_values">%1$d → %2$d nit</string>
-    <string name="hdr_test_progress">%1$d/%2$d · %3$d–%4$d</string>
+    <string name="hdr_test_progress">Step %1$d/%2$d · %3$d%% per square</string>
     <string name="hdr_test_result">Peak %1$d nit · %2$d–%3$d</string>
     <string name="hdr_test_done">%1$d steps</string>
     <string name="hdr_test_finish_first">Finish the search first</string>
