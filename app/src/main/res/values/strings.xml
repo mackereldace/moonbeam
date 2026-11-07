@@ -145,6 +145,18 @@
 
     <!-- Preferences -->
 
+    <plurals name="hdr_profiles_summary">
+        <item quantity="one">What the display reports, plus %d measurement slot</item>
+        <item quantity="other">What the display reports, plus %d measurement slots</item>
+    </plurals>
+
+    <string name="title_hdr_profiles">HDR measurements</string>
+    <string name="summary_hdr_profiles">What this display reports and the slots you have filled</string>
+    <string name="hdr_profiles_system_line">Display reports: peak %1$s · black %2$s · full frame %3$s nit</string>
+    <string name="hdr_profiles_slot_line">Slot %1$d: peak %2$s · full %3$s · black %4$s</string>
+    <string name="hdr_test_slot">Slot %1$d</string>
+    <string name="hdr_test_saved_slot">%1$s written to slot %2$d</string>
+
     <string name="hdr_test_mode_peak">Peak</string>
     <string name="hdr_test_mode_global">Full frame</string>
     <string name="hdr_test_mode_black">Black</string>

@@ -643,6 +643,22 @@ public class StreamSettings extends Activity {
                 LimeLog.info("HDR display: " + capabilities.summary(getActivity()).replace('\n', ' '));
             }
 
+            Preference hdrProfiles = findPreference("hdr_profiles");
+            if (hdrProfiles != null) {
+                final com.limelight.utils.HdrDisplayCapabilities caps =
+                        com.limelight.utils.HdrDisplayCapabilities.probe(getActivity());
+                hdrProfiles.setSummary(getResources().getQuantityString(
+                        R.plurals.hdr_profiles_summary, com.limelight.utils.HdrProfileStore.SLOT_COUNT));
+                hdrProfiles.setOnPreferenceClickListener(preference -> {
+                    new android.app.AlertDialog.Builder(getActivity())
+                            .setTitle(R.string.title_hdr_profiles)
+                            .setMessage(com.limelight.utils.HdrProfileStore.describe(getActivity(), caps))
+                            .setPositiveButton(android.R.string.ok, null)
+                            .show();
+                    return true;
+                });
+            }
+
             Preference hdrTest = findPreference("hdr_display_test");
             if (hdrTest != null) {
                 hdrTest.setOnPreferenceClickListener(preference -> {
@@ -762,6 +778,7 @@ public class StreamSettings extends Activity {
                     "checkbox_hdr_high_brightness",
                     "hdr_brightness_report",
                     "hdr_display_test",
+                    "hdr_profiles",
                     "checkbox_hdr_brightness_override",
                     "seekbar_hdr_peak_brightness_nits",
             }) {
@@ -788,6 +805,7 @@ public class StreamSettings extends Activity {
                 {"checkbox_hdr_high_brightness", "0"},
                 {"hdr_brightness_report", "0"},
                 {"hdr_display_test", "0"},
+                {"hdr_profiles", "0"},
                 {"checkbox_hdr_brightness_override", "0"},
                 {"seekbar_hdr_peak_brightness_nits", "0"},
                 {"list_resolution", "0"},

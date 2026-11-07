@@ -107,6 +107,19 @@
                 android:textSize="11sp" />
 
             <TextView
+                android:id="@+id/hdrSlot"
+                android:layout_width="wrap_content"
+                android:layout_height="26dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_button_secondary"
+                android:gravity="center"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:text="@string/hdr_test_slot"
+                android:textColor="#B3FFFFFF"
+                android:textSize="11sp" />
+
+            <TextView
                 android:id="@+id/hdrSave"
                 android:layout_width="wrap_content"
                 android:layout_height="26dp"

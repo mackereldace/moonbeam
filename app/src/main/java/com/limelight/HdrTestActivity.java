@@ -22,6 +22,7 @@ import android.widget.Toast;
 import com.limelight.hdr.HdrCanvas;
 import com.limelight.preferences.PreferenceConfiguration;
 import com.limelight.utils.HdrDisplayCapabilities;
+import com.limelight.utils.HdrProfileStore;
 
 import java.util.Locale;
 
@@ -53,6 +54,8 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private TextView progressView;
     private TextView modeToggle;
     private View answersRow;
+    private TextView slotView;
+    private int slot = 0;
 
     private static final int MODE_PEAK = 0;    // two 5% squares: peak luminance
     private static final int MODE_GLOBAL = 1;  // full-screen checkerboard: full-frame ceiling
@@ -107,6 +110,12 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         valuesView = findViewById(R.id.hdrValues);
         progressView = findViewById(R.id.hdrProgress);
         modeToggle = findViewById(R.id.hdrMode);
+        slotView = findViewById(R.id.hdrSlot);
+        slotView.setText(getString(R.string.hdr_test_slot, slot + 1));
+        slotView.setOnClickListener(v -> {
+            slot = (slot + 1) % HdrProfileStore.SLOT_COUNT;
+            slotView.setText(getString(R.string.hdr_test_slot, slot + 1));
+        });
         answersRow = findViewById(R.id.hdrAnswers);
 
         surfaceView.getHolder().addCallback(this);
@@ -420,13 +429,31 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
             Toast.makeText(this, R.string.hdr_test_finish_first, Toast.LENGTH_SHORT).show();
             return;
         }
-        int peak = (int) Math.min(Math.max(peakNits, 300), 4000);
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        prefs.edit()
-                .putBoolean(PreferenceConfiguration.HDR_BRIGHTNESS_OVERRIDE_PREF_STRING, true)
-                .putInt(PreferenceConfiguration.HDR_PEAK_BRIGHTNESS_NITS_PREF_STRING, peak)
-                .apply();
-        Toast.makeText(this, getString(R.string.hdr_test_saved, peak), Toast.LENGTH_LONG).show();
+        // Each run writes one field into one slot; measuring a peak today and a black level
+        // tomorrow can end up in the same profile instead of overwriting each other.
+        int field;
+        if (mode == MODE_GLOBAL) {
+            field = HdrProfileStore.FIELD_GLOBAL;
+        }
+        else if (mode == MODE_BLACK) {
+            field = HdrProfileStore.FIELD_BLACK;
+        }
+        else {
+            field = HdrProfileStore.FIELD_PEAK;
+        }
+        HdrProfileStore.set(this, slot, field, (float) peakNits);
+
+        if (field == HdrProfileStore.FIELD_PEAK) {
+            // The host-facing override only makes sense for a peak.
+            int peak = (int) Math.min(Math.max(peakNits, 300), 4000);
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+            prefs.edit()
+                    .putBoolean(PreferenceConfiguration.HDR_BRIGHTNESS_OVERRIDE_PREF_STRING, true)
+                    .putInt(PreferenceConfiguration.HDR_PEAK_BRIGHTNESS_NITS_PREF_STRING, peak)
+                    .apply();
+        }
+        Toast.makeText(this, getString(R.string.hdr_test_saved_slot,
+                formatNits(peakNits), slot + 1), Toast.LENGTH_LONG).show();
         finish();
     }
 

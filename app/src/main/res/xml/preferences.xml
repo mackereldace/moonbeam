@@ -268,6 +268,11 @@
             android:summary="@string/summary_hdr_brightness_report"
             android:persistent="false" />
         <Preference
+            android:key="hdr_profiles"
+            android:title="@string/title_hdr_profiles"
+            android:summary="@string/summary_hdr_profiles"
+            android:persistent="false" />
+        <Preference
             android:key="hdr_display_test"
             android:title="@string/title_hdr_display_test"
             android:summary="@string/summary_hdr_display_test"
