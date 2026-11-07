@@ -43,6 +43,7 @@ import java.util.concurrent.Executors;
 public class HdrTestActivity extends Activity implements SurfaceHolder.Callback {
 
     private static final String LEVEL_CLIP = "hdr/levels.mp4";
+    private static final String LADDER_CLIP = "hdr/ladder.mp4";
     /** One percent apart, from 100 to 10000 nit. */
     private static final int LEVEL_COUNT = 462;
     private static final double LEVEL_MIN_NITS = 100.0;
@@ -87,7 +88,13 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private Pane paneB;
 
     private TextView infoView;
+    private TextView questionView;
     private TextView valuesView;
+    private TextView modeToggle;
+    private boolean ladderMode;
+    private volatile boolean ladderRunning;
+    private Thread ladderThread;
+    private Pane ladderPane;
     private TextView progressView;
     private TextView answerDimmer;
     private TextView answerSame;
@@ -126,6 +133,8 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         paneA = new Pane((SurfaceView) findViewById(R.id.hdrSurface));
         paneB = new Pane((SurfaceView) findViewById(R.id.hdrSurfaceB));
         infoView = findViewById(R.id.hdrInfo);
+        questionView = findViewById(R.id.hdrQuestion);
+        modeToggle = findViewById(R.id.hdrMode);
         valuesView = findViewById(R.id.hdrValues);
         progressView = findViewById(R.id.hdrProgress);
         answerDimmer = findViewById(R.id.hdrAnswerDimmer);
@@ -134,10 +143,118 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         paneA.view.getHolder().addCallback(this);
         paneB.view.getHolder().addCallback(this);
 
+        modeToggle.setOnClickListener(v -> toggleMode());
         answerDimmer.setOnClickListener(v -> answer(true));
         answerSame.setOnClickListener(v -> answer(false));
         findViewById(R.id.hdrSave).setOnClickListener(v -> saveAndFinish());
         findViewById(R.id.hdrClose).setOnClickListener(v -> finish());
+    }
+
+    // ---- ladder ------------------------------------------------------------
+
+    /**
+     * Eight fixed steps from 100 to 3200 nit, shown as adjacent bars. This is the sanity view:
+     * it says whether the screen separates highlights at all, and where the steps start to
+     * merge, without asking the user anything. The two variants that used to live here (a
+     * shorter band and a single step at a time) only repeated what this already shows.
+     */
+    private void toggleMode() {
+        ladderMode = !ladderMode;
+        modeToggle.setText(ladderMode ? R.string.hdr_test_mode_measure : R.string.hdr_test_mode_ladder);
+        if (ladderMode) {
+            stopSearch();
+            paneB.view.setVisibility(View.GONE);
+            questionView.setText(R.string.hdr_test_ladder_hint);
+            valuesView.setText("");
+            progressView.setText("");
+            answerDimmer.setAlpha(0.35f);
+            answerSame.setAlpha(0.35f);
+            startLadder();
+        }
+        else {
+            stopLadder();
+            paneB.view.setVisibility(View.VISIBLE);
+            answerDimmer.setAlpha(1f);
+            answerSame.setAlpha(1f);
+            questionView.setText(R.string.hdr_test_question);
+            startSearch();
+        }
+    }
+
+    private void startLadder() {
+        stopLadder();
+        ladderRunning = true;
+        ladderThread = new Thread(this::decodeLadder, "hdr-ladder");
+        ladderThread.start();
+    }
+
+    private void stopLadder() {
+        ladderRunning = false;
+        Thread thread = ladderThread;
+        ladderThread = null;
+        if (thread != null) {
+            try {
+                thread.join(1200);
+            }
+            catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        if (ladderPane != null) {
+            ladderPane.close();
+            ladderPane = null;
+        }
+    }
+
+    private void decodeLadder() {
+        ladderPane = new Pane(paneA.view);
+        long deadline = SystemClock.elapsedRealtime() + 1500;
+        while (!ladderPane.hasSurface() && SystemClock.elapsedRealtime() < deadline) {
+            SystemClock.sleep(50);
+        }
+        if (!ensurePane(ladderPane, LADDER_CLIP, 1)) {
+            return;
+        }
+        MediaExtractor extractor = ladderPane.extractor;
+        MediaCodec codec = ladderPane.codec;
+        try {
+            MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
+            boolean inputDone = false;
+            while (ladderRunning) {
+                if (!inputDone) {
+                    int inIndex = codec.dequeueInputBuffer(10_000);
+                    if (inIndex >= 0) {
+                        ByteBuffer buffer = codec.getInputBuffer(inIndex);
+                        int size = buffer == null ? -1 : extractor.readSampleData(buffer, 0);
+                        if (size < 0) {
+                            codec.queueInputBuffer(inIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+                            inputDone = true;
+                        }
+                        else {
+                            codec.queueInputBuffer(inIndex, 0, size, extractor.getSampleTime(), 0);
+                            extractor.advance();
+                        }
+                    }
+                }
+                int outIndex = codec.dequeueOutputBuffer(info, 10_000);
+                if (outIndex >= 0) {
+                    boolean eos = (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
+                    codec.releaseOutputBuffer(outIndex, true);
+                    if (eos) {
+                        codec.flush();
+                        extractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+                        inputDone = false;
+                    }
+                }
+            }
+        }
+        catch (RuntimeException e) {
+            reportFailure("ladder", e);
+        }
+    }
+
+    private void stopSearch() {
+        finished = true;
     }
 
     // ---- search ------------------------------------------------------------
@@ -274,6 +391,10 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     }
 
     private boolean ensurePane(Pane pane) {
+        return ensurePane(pane, LEVEL_CLIP, LEVEL_COUNT);
+    }
+
+    private boolean ensurePane(Pane pane, String clip, int levelCount) {
         if (pane.codec != null) {
             return true;
         }
@@ -282,7 +403,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         }
         MediaExtractor extractor = new MediaExtractor();
         try {
-            AssetFileDescriptor afd = getAssets().openFd(LEVEL_CLIP);
+            AssetFileDescriptor afd = getAssets().openFd(clip);
             extractor.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
             afd.close();
 
@@ -307,7 +428,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
             if (format.containsKey(MediaFormat.KEY_DURATION)) {
                 long durationUs = format.getLong(MediaFormat.KEY_DURATION);
                 if (durationUs > 0) {
-                    pane.segmentUs = durationUs / LEVEL_COUNT;
+                    pane.segmentUs = durationUs / levelCount;
                 }
             }
             String mime = format.getString(MediaFormat.KEY_MIME);
@@ -353,7 +474,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     protected void onResume() {
         super.onResume();
         handler.post(sampler);
-        if (paneA.hasSurface() && paneB.hasSurface() && steps == 0) {
+        if (!ladderMode && paneA.hasSurface() && paneB.hasSurface() && steps == 0) {
             handler.post(this::startSearch);
         }
     }
@@ -362,6 +483,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     protected void onPause() {
         super.onPause();
         handler.removeCallbacks(sampler);
+        stopLadder();
         paneA.close();
         paneB.close();
     }

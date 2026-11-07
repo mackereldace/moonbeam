@@ -144,6 +144,8 @@
     <string name="addpc_wrong_sitelocal">That address doesn\'t look right. You must use your router\'s public IP address for streaming over the Internet.</string>
 
     <!-- Preferences -->
+    <string name="hdr_test_ladder_hint">100 to 3200 nit in eight steps: where two steps merge is where the panel stops climbing.</string>
+    <string name="hdr_test_mode_measure">Back to measuring</string>
 
     <string name="hdr_test_question">Is the left side dimmer?</string>
     <string name="hdr_test_answer_dimmer">Dimmer</string>
@@ -155,7 +157,7 @@
     <string name="hdr_test_finish_first">Finish the search first</string>
 
     <string name="hdr_test_mode_pair">Binary search for the peak</string>
-    <string name="hdr_test_mode_ladder">Back to the ladder</string>
+    <string name="hdr_test_mode_ladder">Show ladder</string>
     <string name="hdr_test_pair_hint">Right pane is maximum brightness; the probe starts at 5000 nit. About nine answers land within 1%.</string>
     <string name="hdr_test_pair_diff">Can tell apart</string>
     <string name="hdr_test_pair_same">Same</string>

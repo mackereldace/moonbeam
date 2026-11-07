@@ -104,6 +104,8 @@
     <string name="addpc_enter_ip">请输入一个IP地址</string>
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
+    <string name="hdr_test_ladder_hint">100 到 3200 nit 共八档：哪两档开始分不开，就是它停止变亮的地方。</string>
+    <string name="hdr_test_mode_measure">回到测量</string>
 
     <string name="hdr_test_question">左边比右边暗吗？</string>
     <string name="hdr_test_answer_dimmer">更暗</string>
@@ -115,7 +117,7 @@
     <string name="hdr_test_finish_first">先答完这一轮</string>
 
     <string name="hdr_test_mode_pair">二分查找峰值</string>
-    <string name="hdr_test_mode_ladder">回到阶梯</string>
+    <string name="hdr_test_mode_ladder">看阶梯</string>
     <string name="hdr_test_pair_hint">右边永远满亮度，测点从 5000 起，约九步收敛到 1% 以内。</string>
     <string name="hdr_test_pair_diff">分得开</string>
     <string name="hdr_test_pair_same">一样</string>
