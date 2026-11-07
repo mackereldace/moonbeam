@@ -107,7 +107,7 @@
 
     <string name="hdr_test_mode_pair">二分查找峰值</string>
     <string name="hdr_test_mode_ladder">回到阶梯</string>
-    <string name="hdr_test_pair_hint">右边永远是满亮度。左边从 5000 nit 开始：看得出更暗就往上，看不出就往下。</string>
+    <string name="hdr_test_pair_hint">右边永远是满亮度。测点从 5000 nit 起，之后就是标准二分。</string>
     <string name="hdr_test_pair_diff">分得开</string>
     <string name="hdr_test_pair_same">一样</string>
     <string name="hdr_test_pair_progress">第 %1$d 步：%2$d nit 对比 %3$d</string>

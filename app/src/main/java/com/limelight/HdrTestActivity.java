@@ -267,12 +267,12 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     }
 
     /**
-     * One answer, one step on the ladder of indices.
+     * One answer, one step of plain bisection.
      *
-     * "Dimmer" means the candidate sits below the ceiling, so it becomes the floor; "same"
-     * means it has reached the ceiling, so it becomes the cap. While only one side of the
-     * bracket is known the search keeps bisecting towards the other end - which is the
-     * descent from 5000 that a panel above 5000 nit would never need.
+     * The bracket starts at the whole range with the reference level as the top, and the first
+     * probe sits at 5000 nit rather than at the midpoint - that is where the search is meant to
+     * begin. After that it is the ordinary thing: "dimmer" raises the floor, "same" lowers the
+     * cap, and the next probe is simply the middle of whatever is left.
      */
     private void answerPair(boolean dimmer) {
         if (!pairMode) {
@@ -285,18 +285,9 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
             indexHigh = indexCandidate;
         }
 
-        int next;
-        if (indexLow >= 0 && indexHigh >= 0) {
-            next = (indexLow + indexHigh) / 2;
-        }
-        else if (indexHigh >= 0) {
-            // Still descending, and the useful step is a halving of the luminance itself
-            // (5000 -> 2500 -> 1250 ...), not of the index, which would jump far too low.
-            next = nearestLevel(levelNits(indexHigh) / 2);
-        }
-        else {
-            next = nearestLevel(Math.min(levelNits(indexLow) * 2, levelNits(LEVEL_COUNT - 2)));
-        }
+        int low = indexLow >= 0 ? indexLow : 0;
+        int high = indexHigh >= 0 ? indexHigh : LEVEL_COUNT - 1;
+        int next = (low + high) / 2;
 
         boolean converged = (indexHigh >= 0 && indexLow >= 0 && indexHigh - indexLow <= 1)
                 || next == indexCandidate
