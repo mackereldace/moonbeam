@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.SystemClock;
 import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.view.Display;
@@ -55,6 +56,9 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private View answersRow;
     private TextView slotView;
     private int slot = 0;
+    private boolean guarding;
+    private long guardStartMillis;
+    private double guardDimNits;
 
     private static final int MODE_PEAK = 0;    // two 5% squares: peak luminance
     private static final int MODE_GLOBAL = 1;  // full-screen checkerboard: full-frame ceiling
@@ -243,7 +247,10 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         if (!ready) {
             return;
         }
-        if (mode == MODE_GLOBAL) {
+        if (guarding) {
+            drawGrid(guardDimNits, MAX_NITS);
+        }
+        else if (mode == MODE_GLOBAL) {
             drawGrid(finished ? peakNits : candidateNits, MAX_NITS);
         }
         else if (mode == MODE_BLACK) {
@@ -298,7 +305,21 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     }
 
     private void answer(boolean dimmer) {
-        if (!ready || finished) {
+        if (!ready) {
+            return;
+        }
+        if (guarding) {
+            if (dimmer) {
+                HdrProfileStore.set(this, slot, HdrProfileStore.FIELD_STABILITY, elapsedSeconds());
+                Toast.makeText(this, getString(R.string.hdr_test_saved_time, elapsedText(), slot + 1),
+                        Toast.LENGTH_LONG).show();
+            }
+            else {
+                guardStartMillis = SystemClock.elapsedRealtime();
+            }
+            return;
+        }
+        if (finished) {
             return;
         }
         if (mode == MODE_BLACK) {
@@ -372,6 +393,10 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         questionView.setText(getString(mode == MODE_GLOBAL
                 ? R.string.hdr_test_result_grid : R.string.hdr_test_result,
                 Math.round(peakNits), Math.round(low), Math.round(high)));
+        if (mode == MODE_GLOBAL) {
+            startGuarding();
+            return;
+        }
         valuesView.setText("");
         progressView.setText(getString(R.string.hdr_test_done, steps));
         answersRow.setVisibility(View.GONE);
@@ -387,7 +412,52 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         }
     }
 
+    /**
+     * After the full-frame ceiling is known, keep a checkerboard on screen whose dim cells sit
+     * at 80% of that ceiling. The bright cells clip to the panel, so the pattern stays visible
+     * only while the panel still reaches 80% of what it reached a minute ago; if it fades,
+     * brightness dropped. The elapsed time until that happens is what the save button records.
+     */
+    private void startGuarding() {
+        guarding = true;
+        guardStartMillis = SystemClock.elapsedRealtime();
+        guardDimNits = peakNits * 0.8;
+        answersRow.setVisibility(View.VISIBLE);
+        valuesView.setVisibility(View.VISIBLE);
+        valuesView.setText(getString(R.string.hdr_test_guard_hint, Math.round(guardDimNits)));
+        ((TextView) findViewById(R.id.hdrAnswerDimmer)).setText(R.string.hdr_test_answer_save_time);
+        ((TextView) findViewById(R.id.hdrAnswerSame)).setText(R.string.hdr_test_answer_restart);
+        drawGrid(guardDimNits, MAX_NITS);
+        handler.post(ticker);
+    }
+
+    private void stopGuarding() {
+        guarding = false;
+        handler.removeCallbacks(ticker);
+    }
+
+    private final Runnable ticker = new Runnable() {
+        @Override
+        public void run() {
+            if (!guarding) {
+                return;
+            }
+            progressView.setText(getString(R.string.hdr_test_guard_timer, elapsedText()));
+            handler.postDelayed(this, 500);
+        }
+    };
+
+    private int elapsedSeconds() {
+        return (int) ((SystemClock.elapsedRealtime() - guardStartMillis) / 1000);
+    }
+
+    private String elapsedText() {
+        int total = elapsedSeconds();
+        return String.format(Locale.US, "%02d:%02d", total / 60, total % 60);
+    }
+
     private void applyMode() {
+        stopGuarding();
         highlightMode();
 
         answersRow.setVisibility(View.VISIBLE);
@@ -491,18 +561,9 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         }
         HdrProfileStore.set(this, slot, field, (float) peakNits);
 
-        if (field == HdrProfileStore.FIELD_PEAK) {
-            // The host-facing override only makes sense for a peak.
-            int peak = (int) Math.min(Math.max(peakNits, 300), 4000);
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-            prefs.edit()
-                    .putBoolean(PreferenceConfiguration.HDR_BRIGHTNESS_OVERRIDE_PREF_STRING, true)
-                    .putInt(PreferenceConfiguration.HDR_PEAK_BRIGHTNESS_NITS_PREF_STRING, peak)
-                    .apply();
-        }
         Toast.makeText(this, getString(R.string.hdr_test_saved_slot,
                 formatNits(peakNits), slot + 1), Toast.LENGTH_LONG).show();
-        finish();
+        // Stay on the page: there are three measurements and a hold test to get through.
     }
 
     @Override

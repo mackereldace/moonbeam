@@ -24,10 +24,13 @@ public final class HdrProfileStore {
     private static final String KEY_PEAK = "hdr_slot%d_peak";
     private static final String KEY_GLOBAL = "hdr_slot%d_global";
     private static final String KEY_BLACK = "hdr_slot%d_black";
+    private static final String KEY_STABILITY = "hdr_slot%d_stability";
 
     public static final int FIELD_PEAK = 0;
     public static final int FIELD_GLOBAL = 1;
     public static final int FIELD_BLACK = 2;
+    /** Seconds the full-frame level held before the checkerboard faded. */
+    public static final int FIELD_STABILITY = 3;
 
     private HdrProfileStore() {
     }
@@ -42,6 +45,8 @@ public final class HdrProfileStore {
                 return String.format(Locale.US, KEY_GLOBAL, slot);
             case FIELD_BLACK:
                 return String.format(Locale.US, KEY_BLACK, slot);
+            case FIELD_STABILITY:
+                return String.format(Locale.US, KEY_STABILITY, slot);
             default:
                 return String.format(Locale.US, KEY_PEAK, slot);
         }
@@ -61,7 +66,63 @@ public final class HdrProfileStore {
         editor.remove(key(FIELD_PEAK, slot));
         editor.remove(key(FIELD_GLOBAL, slot));
         editor.remove(key(FIELD_BLACK, slot));
+        editor.remove(key(FIELD_STABILITY, slot));
         editor.apply();
+    }
+
+
+    /**
+     * A profile resolved from the user's choice: either the display's own report, or a slot
+     * with whatever fields were measured. Missing fields fall back to the report, because a
+     * slot that only has a peak measured should still contribute that peak.
+     */
+    public static final class Profile {
+        public final String label;
+        public final float peakNits;
+        public final float blackNits;
+        public final float globalNits;
+        public final boolean fromSlot;
+
+        Profile(String label, float peakNits, float blackNits, float globalNits, boolean fromSlot) {
+            this.label = label;
+            this.peakNits = peakNits;
+            this.blackNits = blackNits;
+            this.globalNits = globalNits;
+            this.fromSlot = fromSlot;
+        }
+
+        /** The three values as a session report, or null when they cannot all be true. */
+        public HdrBrightness toCapabilities(HdrBrightness reported) {
+            float peak = peakNits > 0 ? peakNits : (reported != null ? reported.maxNits : 0);
+            float black = blackNits > 0 ? blackNits : (reported != null ? reported.minNits : 0);
+            float global = globalNits > 0 ? globalNits
+                    : (reported != null ? reported.maxFullFrameNits : 0);
+            if (peak <= 0 || global <= 0) {
+                return reported;
+            }
+            return HdrBrightness.create(peak, black, global);
+        }
+    }
+
+    public static Profile resolve(Context context, String source) {
+        if (source == null || !source.startsWith("slot")) {
+            return new Profile("system", 0, 0, 0, false);
+        }
+        int slot;
+        try {
+            slot = Integer.parseInt(source.substring(4));
+        }
+        catch (NumberFormatException e) {
+            return new Profile("system", 0, 0, 0, false);
+        }
+        if (slot < 0 || slot >= SLOT_COUNT) {
+            return new Profile("system", 0, 0, 0, false);
+        }
+        return new Profile("slot" + (slot + 1),
+                get(context, slot, FIELD_PEAK),
+                get(context, slot, FIELD_BLACK),
+                get(context, slot, FIELD_GLOBAL),
+                true);
     }
 
     /** One line per slot, for the dialog in Settings. */
@@ -77,10 +138,19 @@ public final class HdrProfileStore {
             sb.append(context.getString(R.string.hdr_profiles_slot_line, slot + 1,
                     value(get(context, slot, FIELD_PEAK), true),
                     value(get(context, slot, FIELD_BLACK), false),
-                    value(get(context, slot, FIELD_GLOBAL), true)));
+                    value(get(context, slot, FIELD_GLOBAL), true),
+                    duration(context, get(context, slot, FIELD_STABILITY))));
             sb.append('\n');
         }
         return sb.toString().trim();
+    }
+
+    private static String duration(Context context, float seconds) {
+        if (seconds <= 0f) {
+            return "-";
+        }
+        int total = Math.round(seconds);
+        return String.format(Locale.US, "%02d:%02d", total / 60, total % 60);
     }
 
     private static String value(float nits, boolean integer) {

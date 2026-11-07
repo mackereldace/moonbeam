@@ -105,6 +105,14 @@
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
 
+        <string name="hdr_profile_source">使用的 HDR 数值</string>
+    <string name="hdr_profile_source_summary">安卓报告值，或某个实测槽位</string>
+    <string name="hdr_test_guard_hint">格子亮度 %1$d nit，对比最亮档：格子消失说明亮度掉了。</string>
+    <string name="hdr_test_guard_timer">已保持 %1$s · 格子消失时点保存</string>
+    <string name="hdr_test_answer_restart">重新计时</string>
+    <string name="hdr_test_answer_save_time">保存时间</string>
+    <string name="hdr_test_saved_time">已记录 %1$s 到槽 %2$d</string>
+
     <string name="hdr_test_no_pq">HDR 渲染不可用（第 %1$d 步：%2$s）</string>
     <string name="hdr_init_no_display">没有 EGL display</string>
     <string name="hdr_init_no_config">没有 10-bit EGL 配置</string>
@@ -177,7 +185,7 @@
     <string name="hdr_test_layout_a">整条</string>
     <string name="hdr_test_layout_b">半高</string>
     <string name="hdr_test_layout_c">单档</string>
-    <string name="hdr_test_save">采用</string>
+    <string name="hdr_test_save">保存</string>
     <string name="hdr_test_close">关闭</string>
     <string name="hdr_test_saved">峰值已设为 %1$d nit，重新连接后生效。</string>
     <string name="hdr_test_play_error">无法播放测试片：%1$s</string>

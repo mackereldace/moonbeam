@@ -48,9 +48,10 @@ android {
         // 0.7.5  峰值改为一对方块紧贴（无中缝）
         // 0.7.6  四项改成常驻分段按钮（峰值/全局/黑位/阶梯），当前项高亮，不再靠循环切换
         // 0.7.7  去掉阶梯；按钮上三下三对齐；显示不再避让摄像头；存档顺序改峰值/黑位/全局；默认竖屏可横屏
+        // 0.7.8  采用→保存且不退出；全局测完转计时看掉亮度；手动峰值改为选择安卓预设或槽位
         // 1.0.0  首个正式版
-        versionName "0.7.7"
-        versionCode = 707
+        versionName "0.7.8"
+        versionCode = 708
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'

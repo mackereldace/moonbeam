@@ -147,4 +147,21 @@
         <item>1</item>
         <item>2</item>
     </string-array>
+
+    <string-array name="hdr_profile_source_entries">
+        <item>Android report</item>
+        <item>Slot 1</item>
+        <item>Slot 2</item>
+        <item>Slot 3</item>
+        <item>Slot 4</item>
+        <item>Slot 5</item>
+    </string-array>
+    <string-array name="hdr_profile_source_values">
+        <item>system</item>
+        <item>slot0</item>
+        <item>slot1</item>
+        <item>slot2</item>
+        <item>slot3</item>
+        <item>slot4</item>
+    </string-array>
 </resources>

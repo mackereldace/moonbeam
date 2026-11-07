@@ -145,6 +145,15 @@
 
     <!-- Preferences -->
 
+    <string name="hdr_profiles_slot_line">Slot %1$d: peak %2$s · black %3$s · full %4$s · held %5$s</string>
+    <string name="hdr_profile_source">HDR values in use</string>
+    <string name="hdr_profile_source_summary">Android report, or one of the measured slots</string>
+    <string name="hdr_test_guard_hint">Grid at %1$d nit against the top: if it fades, brightness dropped.</string>
+    <string name="hdr_test_guard_timer">Holding %1$s · tap save when the grid fades</string>
+    <string name="hdr_test_answer_restart">Restart timer</string>
+    <string name="hdr_test_answer_save_time">Save time</string>
+    <string name="hdr_test_saved_time">%1$s recorded in slot %2$d</string>
+
     <string name="hdr_test_no_pq">HDR renderer unavailable (step %1$d: %2$s)</string>
     <string name="hdr_init_no_display">no EGL display</string>
     <string name="hdr_init_no_config">no 10-bit EGL config</string>
@@ -161,8 +170,7 @@
     <string name="title_hdr_profiles">HDR measurements</string>
     <string name="summary_hdr_profiles">What this display reports and the slots you have filled</string>
     <string name="hdr_profiles_system_line">Display reports: peak %1$s · black %2$s · full frame %3$s nit</string>
-    <string name="hdr_profiles_slot_line">Slot %1$d: peak %2$s · black %3$s · full %4$s</string>
-    <string name="hdr_test_slot">Slot %1$d</string>
+        <string name="hdr_test_slot">Slot %1$d</string>
     <string name="hdr_test_saved_slot">%1$s written to slot %2$d</string>
 
     <string name="hdr_test_mode_peak">Peak</string>
@@ -218,7 +226,7 @@
     <string name="hdr_test_layout_a">Bars</string>
     <string name="hdr_test_layout_b">Short bars</string>
     <string name="hdr_test_layout_c">One at a time</string>
-    <string name="hdr_test_save">Use</string>
+    <string name="hdr_test_save">Save</string>
     <string name="hdr_test_close">Close</string>
     <string name="hdr_test_saved">Peak set to %1$d nit. Reconnect for it to take effect.</string>
     <string name="hdr_test_play_error">Cannot play the test clip: %1$s</string>

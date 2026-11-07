@@ -20,6 +20,7 @@ import com.limelight.binding.video.PerfHudData;
 import com.limelight.telemetry.AbrController;
 import com.limelight.utils.HdrBrightness;
 import com.limelight.utils.HdrDisplayCapabilities;
+import com.limelight.utils.HdrProfileStore;
 import com.limelight.telemetry.SessionTelemetry;
 import com.limelight.binding.video.PerfOverlayListener;
 import com.limelight.nvstream.NvConnection;
@@ -505,13 +506,17 @@ public class Game extends Activity implements SurfaceHolder.Callback,
             }
         }
 
-        // What this phone's display says it can do, and optionally the user's peak override.
-        // HDR sessions only: outside HDR the numbers would describe a target nobody uses.
+        // What the session should assume the display can do: either what Android reports, or a
+        // profile the user measured and saved. HDR sessions only - outside HDR the numbers
+        // describe a target nobody uses.
         HdrBrightness hdrBrightness = null;
         if (willStreamHdr) {
             HdrDisplayCapabilities caps = HdrDisplayCapabilities.probe(this);
-            hdrBrightness = HdrBrightness.forSession(caps.brightness,
-                    prefConfig.hdrBrightnessOverride ? prefConfig.hdrPeakBrightnessNits : null);
+            HdrProfileStore.Profile profile =
+                    HdrProfileStore.resolve(this, prefConfig.hdrProfileSource);
+            hdrBrightness = HdrBrightness.forSession(
+                    profile.toCapabilities(caps.brightness),
+                    null);
             if (hdrBrightness != null) {
                 android.util.Log.i("Moonbeam", "HDR brightness report: " + hdrBrightness.describe());
             }

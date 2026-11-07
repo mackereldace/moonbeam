@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string-array name="hdr_profile_source_entries">
+        <item>安卓报告值</item>
+        <item>槽 1</item>
+        <item>槽 2</item>
+        <item>槽 3</item>
+        <item>槽 4</item>
+        <item>槽 5</item>
+    </string-array>
+</resources>

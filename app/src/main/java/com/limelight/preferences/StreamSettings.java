@@ -779,8 +779,7 @@ public class StreamSettings extends Activity {
                     "hdr_brightness_report",
                     "hdr_display_test",
                     "hdr_profiles",
-                    "checkbox_hdr_brightness_override",
-                    "seekbar_hdr_peak_brightness_nits",
+                    "list_hdr_profile_source",
             }) {
                 Preference preference = findPreference(key);
                 if (preference != null && preference.getParent() != null) {
@@ -806,8 +805,7 @@ public class StreamSettings extends Activity {
                 {"hdr_brightness_report", "0"},
                 {"hdr_display_test", "0"},
                 {"hdr_profiles", "0"},
-                {"checkbox_hdr_brightness_override", "0"},
-                {"seekbar_hdr_peak_brightness_nits", "0"},
+                {"list_hdr_profile_source", "0"},
                 {"list_resolution", "0"},
                 {"list_fps", "0"},
                 {"checkbox_stretch_video", "0"},
