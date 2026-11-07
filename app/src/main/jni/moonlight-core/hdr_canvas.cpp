@@ -29,6 +29,8 @@ ANativeWindow *g_win = nullptr;
 GLuint g_prog = 0;
 GLint g_rectLoc = -1;
 GLint g_nitsLoc = -1;
+GLint g_nits2Loc = -1;
+GLint g_cellLoc = -1;
 int g_width = 0;
 int g_height = 0;
 
@@ -46,12 +48,19 @@ const char *kFragment =
     "precision highp float;\n"
     "uniform vec4 uRect;\n"   // x0, y0, x1, y1 in 0..1, y down
     "uniform float uNits;\n"
+    "uniform float uNits2;\n"  // second luminance, used by the grid
+    "uniform float uCell;\n"   // grid pitch in pixels; 0 draws a single patch
     "out vec4 fragColor;\n"
     "float pq(float nits) {\n"
     "  float y = pow(clamp(nits, 0.0, 10000.0) / 10000.0, 0.1593017578125);\n"
     "  return pow((0.8359375 + 18.8515625 * y) / (1.0 + 18.6875 * y), 78.84375);\n"
     "}\n"
     "void main() {\n"
+    "  if (uCell > 0.0) {\n"
+    "    float checker = mod(floor(gl_FragCoord.x / uCell) + floor(gl_FragCoord.y / uCell), 2.0);\n"
+    "    fragColor = vec4(vec3(pq(checker < 1.0 ? uNits : uNits2)), 1.0);\n"
+    "    return;\n"
+    "  }\n"
     "  vec2 uv = gl_FragCoord.xy / vec2(%d.0, %d.0);\n"
     "  if (uv.x < uRect.x || uv.x > uRect.z || uv.y < uRect.y || uv.y > uRect.w) discard;\n"
     "  fragColor = vec4(vec3(pq(uNits)), 1.0);\n"
@@ -164,6 +173,8 @@ Java_com_limelight_hdr_HdrCanvas_nativeInit(JNIEnv *env, jclass, jobject surface
   }
   g_rectLoc = glGetUniformLocation(g_prog, "uRect");
   g_nitsLoc = glGetUniformLocation(g_prog, "uNits");
+  g_nits2Loc = glGetUniformLocation(g_prog, "uNits2");
+  g_cellLoc = glGetUniformLocation(g_prog, "uCell");
 
   glViewport(0, 0, g_width, g_height);
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -196,6 +207,28 @@ Java_com_limelight_hdr_HdrCanvas_nativeDraw(JNIEnv *, jclass, jint x, jint y, ji
   eglSwapBuffers(g_dpy, g_surf);
 }
 
+// Full-screen checkerboard alternating two luminances. Every cell borders the other value,
+// so the comparison is local everywhere instead of across a seam, and the total lit area is
+// the whole screen - which is what the full-frame measurement is about.
+JNIEXPORT void JNICALL
+Java_com_limelight_hdr_HdrCanvas_nativeDrawGrid(JNIEnv *, jclass, jint cell, jfloat nitsA,
+                                                jfloat nitsB) {
+  if (g_prog == 0) {
+    return;
+  }
+  glViewport(0, 0, g_width, g_height);
+  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT);
+  glUseProgram(g_prog);
+  glUniform4f(g_rectLoc, 0.0f, 0.0f, 1.0f, 1.0f);
+  glUniform1f(g_nitsLoc, nitsA);
+  glUniform1f(g_nits2Loc, nitsB);
+  glUniform1f(g_cellLoc, (float) (cell > 0 ? cell : 1));
+  glDrawArrays(GL_TRIANGLES, 0, 3);
+  glUniform1f(g_cellLoc, 0.0f);
+  eglSwapBuffers(g_dpy, g_surf);
+}
+
 // Two patches in one frame: clear once, draw both, swap once.
 JNIEXPORT void JNICALL
 Java_com_limelight_hdr_HdrCanvas_nativeDrawPair(JNIEnv *, jclass,
@@ -221,6 +254,7 @@ Java_com_limelight_hdr_HdrCanvas_nativeDrawPair(JNIEnv *, jclass,
     float y1n = (float) (ys[i] + hs[i]) / (float) g_height;
     glUniform4f(g_rectLoc, x0, 1.0f - y1n, x1n, 1.0f - y0);
     glUniform1f(g_nitsLoc, ns[i]);
+    glUniform1f(g_cellLoc, 0.0f);
     glDrawArrays(GL_TRIANGLES, 0, 3);
   }
   eglSwapBuffers(g_dpy, g_surf);

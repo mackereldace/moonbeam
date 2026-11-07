@@ -37,6 +37,9 @@ public final class HdrCanvas {
     public static native void nativeDrawPair(int x1, int y1, int w1, int h1, float nits1,
                                              int x2, int y2, int w2, int h2, float nits2);
 
+    /** Full-screen checkerboard alternating two luminances, cells of {@code cell} pixels. */
+    public static native void nativeDrawGrid(int cell, float nitsA, float nitsB);
+
     /** Evenly spaced vertical bands, one per luminance, inside the given band. */
     public static native void nativeDrawLadder(int y, int height, float[] nits);
 

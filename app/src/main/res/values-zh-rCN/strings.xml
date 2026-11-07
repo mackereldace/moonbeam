@@ -104,6 +104,15 @@
     <string name="addpc_enter_ip">请输入一个IP地址</string>
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
+
+    <string name="hdr_test_mode_grid">网格</string>
+    <string name="hdr_test_mode_patch">方块</string>
+    <string name="hdr_test_question_grid">还看得出格子吗？</string>
+    <string name="hdr_test_answer_visible">看得出</string>
+    <string name="hdr_test_answer_invisible">看不出</string>
+    <string name="hdr_test_values_grid">%1$d → %2$d nit，全屏</string>
+    <string name="hdr_test_progress_grid">%1$d/%2$d · 全屏</string>
+    <string name="hdr_test_result_grid">全屏上限 %1$d nit · %2$d–%3$d</string>
     <string name="hdr_test_no_pq">这台设备不支持 PQ 渲染（缺少 EGL BT2020/PQ）</string>
     <string name="hdr_test_ladder_hint">八档 100 → 3200 nit</string>
     <string name="hdr_test_mode_measure">测量</string>

@@ -54,8 +54,12 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private TextView modeToggle;
     private View answersRow;
 
+    private static final int MODE_PATCH = 0;   // two 5% squares: peak luminance
+    private static final int MODE_GRID = 1;    // full-screen checkerboard: full-frame ceiling
+    private static final int MODE_LADDER = 2;  // eight bands, no measuring
+
     private boolean ready;
-    private boolean ladderMode;
+    private int mode = MODE_PATCH;
 
     private double lowNits;
     private double highNits;
@@ -150,6 +154,12 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
                 leftX + side + gap, top, side, side, (float) rightNits);
     }
 
+    /** Full-screen checkerboard: cells alternate the candidate and the top of the range. */
+    private void drawGrid(double candidate, double reference) {
+        int cell = Math.max(32, surfaceWidth / 16);
+        HdrCanvas.nativeDrawGrid(cell, (float) reference, (float) candidate);
+    }
+
     private void drawLadder() {
         int top = (int) (surfaceHeight * 0.1);
         int height = (int) (surfaceHeight * 0.8);
@@ -160,8 +170,11 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         if (!ready) {
             return;
         }
-        if (ladderMode) {
+        if (mode == MODE_LADDER) {
             drawLadder();
+        }
+        else if (mode == MODE_GRID) {
+            drawGrid(finished ? peakNits : candidateNits, MAX_NITS);
         }
         else if (!finished) {
             drawPair(candidateNits, MAX_NITS);
@@ -184,11 +197,19 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
 
     private void ask() {
         steps++;
-        valuesView.setText(getString(R.string.hdr_test_values,
-                Math.round(candidateNits), Math.round(MAX_NITS)));
-        progressView.setText(getString(R.string.hdr_test_progress, steps, MAX_STEPS,
-                Math.round(areaPercent()), Math.round(areaPercent() * 2)));
-        drawPair(candidateNits, MAX_NITS);
+        if (mode == MODE_GRID) {
+            valuesView.setText(getString(R.string.hdr_test_values_grid,
+                    Math.round(candidateNits), Math.round(MAX_NITS)));
+            progressView.setText(getString(R.string.hdr_test_progress_grid, steps, MAX_STEPS));
+            drawGrid(candidateNits, MAX_NITS);
+        }
+        else {
+            valuesView.setText(getString(R.string.hdr_test_values,
+                    Math.round(candidateNits), Math.round(MAX_NITS)));
+            progressView.setText(getString(R.string.hdr_test_progress, steps, MAX_STEPS,
+                    Math.round(areaPercent()), Math.round(areaPercent() * 2)));
+            drawPair(candidateNits, MAX_NITS);
+        }
     }
 
     /** Area of each patch as a percentage of the screen, computed from the real geometry. */
@@ -227,31 +248,46 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         double low = lowNits > 0 ? lowNits : MIN_NITS;
         double high = highNits > 0 ? highNits : MAX_NITS;
         peakNits = Math.sqrt(low * high);
-        questionView.setText(getString(R.string.hdr_test_result,
+        questionView.setText(getString(mode == MODE_GRID
+                ? R.string.hdr_test_result_grid : R.string.hdr_test_result,
                 Math.round(peakNits), Math.round(low), Math.round(high)));
         valuesView.setText("");
         progressView.setText(getString(R.string.hdr_test_done, steps));
         answersRow.setVisibility(View.GONE);
-        drawPair(peakNits, MAX_NITS);
+        redraw();
     }
 
     private void toggleMode() {
-        ladderMode = !ladderMode;
-        modeToggle.setText(ladderMode ? R.string.hdr_test_mode_measure : R.string.hdr_test_mode_ladder);
-        if (ladderMode) {
-            answersRow.setVisibility(View.GONE);
-            valuesView.setVisibility(View.GONE);
-            progressView.setVisibility(View.GONE);
-            questionView.setText(R.string.hdr_test_ladder_hint);
-            drawLadder();
+        mode = (mode + 1) % 3;
+        applyMode();
+    }
+
+    private void applyMode() {
+        boolean measuring = mode != MODE_LADDER;
+        answersRow.setVisibility(measuring ? View.VISIBLE : View.GONE);
+        valuesView.setVisibility(measuring ? View.VISIBLE : View.GONE);
+        progressView.setVisibility(measuring ? View.VISIBLE : View.GONE);
+
+        switch (mode) {
+            case MODE_PATCH:
+                modeToggle.setText(R.string.hdr_test_mode_grid);
+                questionView.setText(R.string.hdr_test_question);
+                ((TextView) findViewById(R.id.hdrAnswerDimmer)).setText(R.string.hdr_test_answer_dimmer);
+                ((TextView) findViewById(R.id.hdrAnswerSame)).setText(R.string.hdr_test_answer_same);
+                break;
+            case MODE_GRID:
+                modeToggle.setText(R.string.hdr_test_mode_ladder);
+                questionView.setText(R.string.hdr_test_question_grid);
+                ((TextView) findViewById(R.id.hdrAnswerDimmer)).setText(R.string.hdr_test_answer_visible);
+                ((TextView) findViewById(R.id.hdrAnswerSame)).setText(R.string.hdr_test_answer_invisible);
+                break;
+            default:
+                modeToggle.setText(R.string.hdr_test_mode_patch);
+                questionView.setText(R.string.hdr_test_ladder_hint);
+                drawLadder();
+                return;
         }
-        else {
-            answersRow.setVisibility(View.VISIBLE);
-            valuesView.setVisibility(View.VISIBLE);
-            progressView.setVisibility(View.VISIBLE);
-            questionView.setText(R.string.hdr_test_question);
-            startSearch();
-        }
+        startSearch();
     }
 
     // ---- lifecycle ---------------------------------------------------------
