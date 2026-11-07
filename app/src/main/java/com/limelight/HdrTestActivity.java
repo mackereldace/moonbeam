@@ -454,7 +454,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
                 return;
             }
             float ratio = currentRatio();
-            ratioPlot.add(ratio);
+            ratioPlot.add(ratio, currentBrightness());
             if (ratio > 0f) {
                 if (ratioFirst <= 0f) {
                     ratioFirst = ratio;
@@ -480,6 +480,21 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
             }
         }
         catch (RuntimeException ignored) {
+        }
+        return 0f;
+    }
+
+    /** Display brightness as the system currently applies it; 0 when it cannot be read. */
+    private float currentBrightness() {
+        try {
+            Display display = getWindowManager().getDefaultDisplay();
+            Object info = Display.class.getMethod("getBrightnessInfo").invoke(display);
+            if (info != null) {
+                java.lang.reflect.Field field = info.getClass().getField("brightness");
+                return field.getFloat(info);
+            }
+        }
+        catch (Throwable ignored) {
         }
         return 0f;
     }

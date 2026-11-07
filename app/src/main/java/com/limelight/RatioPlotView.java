@@ -8,19 +8,23 @@ import android.graphics.Path;
 import android.util.AttributeSet;
 import android.view.View;
 
+import java.util.Locale;
+
 /**
- * A strip chart of the display's reported HDR/SDR ratio against time.
+ * A strip chart for the two numbers that can move while the hold test runs.
  *
- * The hold test watches for a checkerboard to fade, and the ratio is the only independent
- * number available while that happens - if the panel is limiting itself both should move at
- * once, and if only the pattern fades the eye adapted instead. A single reading cannot show
- * that; the shape over time can.
+ * The HDR/SDR ratio turned out to be a driver constant on this device - it reports the same
+ * value for minutes on end, and a flat line says nothing. The screen brightness value does move
+ * when the panel limits itself, so both are sampled: the chart draws whichever actually varies
+ * and labels which one that is. When neither moves, the label says so instead of pretending a
+ * straight line is a measurement.
  */
 public class RatioPlotView extends View {
 
     private static final int CAPACITY = 600;   // ten minutes at one sample per second
 
-    private final float[] samples = new float[CAPACITY];
+    private final float[] ratio = new float[CAPACITY];
+    private final float[] brightness = new float[CAPACITY];
     private int count;
     private int head;
 
@@ -58,11 +62,9 @@ public class RatioPlotView extends View {
         invalidate();
     }
 
-    public void add(float ratio) {
-        if (ratio <= 0f) {
-            return;
-        }
-        samples[head] = ratio;
+    public void add(float ratioValue, float brightnessValue) {
+        ratio[head] = ratioValue;
+        brightness[head] = brightnessValue;
         head = (head + 1) % CAPACITY;
         if (count < CAPACITY) {
             count++;
@@ -70,9 +72,26 @@ public class RatioPlotView extends View {
         invalidate();
     }
 
-    private float sample(int index) {
+    private float sample(float[] series, int index) {
         int start = (head - count + CAPACITY) % CAPACITY;
-        return samples[(start + index) % CAPACITY];
+        return series[(start + index) % CAPACITY];
+    }
+
+    /** Range of a series, ignoring samples that were never available (<= 0). */
+    private float[] range(float[] series) {
+        float min = Float.MAX_VALUE;
+        float max = -Float.MAX_VALUE;
+        int seen = 0;
+        for (int i = 0; i < count; i++) {
+            float v = sample(series, i);
+            if (v <= 0f) {
+                continue;
+            }
+            min = Math.min(min, v);
+            max = Math.max(max, v);
+            seen++;
+        }
+        return seen < 2 ? null : new float[] {min, max};
     }
 
     @Override
@@ -80,40 +99,68 @@ public class RatioPlotView extends View {
         int w = getWidth();
         int h = getHeight();
         float pad = 6f;
+        float labelHeight = 26f;
 
-        canvas.drawRect(pad, pad, w - pad, h - pad, axisPaint);
+        canvas.drawRect(pad, pad, w - pad, h - pad - labelHeight, axisPaint);
 
-        if (count < 2) {
-            canvas.drawText("—", pad + 8f, h / 2f, textPaint);
+        if (count < 3) {
+            canvas.drawText("…", pad + 8f, h / 2f, textPaint);
             return;
         }
 
-        float min = Float.MAX_VALUE;
-        float max = -Float.MAX_VALUE;
-        for (int i = 0; i < count; i++) {
-            float v = sample(i);
-            min = Math.min(min, v);
-            max = Math.max(max, v);
+        float[] ratioRange = range(ratio);
+        float[] brightnessRange = range(brightness);
+
+        boolean useRatio = ratioRange != null && ratioRange[1] - ratioRange[0] > 0.01f;
+        boolean useBrightness = brightnessRange != null
+                && brightnessRange[1] - brightnessRange[0] > 0.0005f;
+
+        float[] series;
+        float[] bounds;
+        String label;
+        if (useRatio) {
+            series = ratio;
+            bounds = ratioRange;
+            label = "HDR/SDR";
         }
-        // Keep a little air so a flat line does not sit on the frame.
-        float span = Math.max(0.05f, max - min);
+        else if (useBrightness) {
+            series = brightness;
+            bounds = brightnessRange;
+            label = "亮度";
+        }
+        else {
+            canvas.drawText("两个值都没变化", pad + 8f, h - pad - 6f, textPaint);
+            return;
+        }
+
+        float min = bounds[0];
+        float max = bounds[1];
+        float span = Math.max(1e-4f, max - min);
         min -= span * 0.15f;
         max += span * 0.15f;
 
         path.reset();
+        int plotted = 0;
         for (int i = 0; i < count; i++) {
+            float v = sample(series, i);
+            if (v <= 0f) {
+                continue;
+            }
             float x = pad + (w - 2 * pad) * i / (float) (count - 1);
-            float y = h - pad - (h - 2 * pad) * (sample(i) - min) / (max - min);
-            if (i == 0) {
+            float y = (h - pad - labelHeight) - (h - 2 * pad - labelHeight) * (v - min) / (max - min);
+            if (plotted == 0) {
                 path.moveTo(x, y);
             }
             else {
                 path.lineTo(x, y);
             }
+            plotted++;
         }
         canvas.drawPath(path, linePaint);
 
-        canvas.drawText(String.format(java.util.Locale.US, "%.2f", max), pad + 8f, pad + 22f, textPaint);
-        canvas.drawText(String.format(java.util.Locale.US, "%.2f", min), pad + 8f, h - pad - 8f, textPaint);
+        canvas.drawText(String.format(Locale.US, "%.2f", bounds[1]), pad + 8f, pad + 22f, textPaint);
+        canvas.drawText(String.format(Locale.US, "%.2f", bounds[0]), pad + 8f,
+                h - pad - labelHeight - 6f, textPaint);
+        canvas.drawText(label, pad + 8f, h - pad - 6f, textPaint);
     }
 }

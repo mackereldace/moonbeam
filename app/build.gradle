@@ -52,9 +52,10 @@ android {
         // 0.7.9  计时保存不足 1 秒按 1 秒记（0 会被当成未测）；底部保存也写入计时
         // 0.7.10 修中文存档行缺第 5 个占位符（看不见维持时长）；计时模式记录 HDR/SDR 比值曲线
         // 0.7.11 比值不进存档，改为实测时在右上角画比值-时间曲线
+        // 0.7.12 曲线同时采样亮度，画真正在变的那条；两者都不变时直说
         // 1.0.0  首个正式版
-        versionName "0.7.11"
-        versionCode = 711
+        versionName "0.7.12"
+        versionCode = 712
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'
