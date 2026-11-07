@@ -37,9 +37,10 @@ android {
         // 0.6.0  HDR 测试页重做界面：峰值测量为主
         // 0.6.1  阶梯保留（只留八档全高那一版），通过底部按钮切换；去掉半高/单档
         // 0.6.2  测试页排版收紧：内容区占大块，按钮改胶囊尺寸，阶梯模式隐藏答题行
+        // 0.6.3  控制条改圆角卡片，处理系统栏 insets，按钮不再被小白条压住
         // 1.0.0  首个正式版
-        versionName "0.6.2"
-        versionCode = 602
+        versionName "0.6.3"
+        versionCode = 603
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'

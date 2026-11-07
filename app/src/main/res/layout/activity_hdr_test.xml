@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- HDR test: content on top, a slim control strip at the bottom. -->
+<!-- HDR test: fields fill the screen, controls sit in a card above the gesture bar. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/hdrRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -18,6 +19,11 @@
             android:layout_height="match_parent"
             android:layout_weight="1" />
 
+        <View
+            android:layout_width="2dp"
+            android:layout_height="match_parent"
+            android:background="#FF000000" />
+
         <SurfaceView
             android:id="@+id/hdrSurfaceB"
             android:layout_width="0dp"
@@ -26,13 +32,18 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/hdrPanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="14dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bg_card"
         android:orientation="vertical"
-        android:background="#FF0A0A0A"
         android:paddingStart="18dp"
         android:paddingEnd="18dp"
-        android:paddingTop="10dp"
+        android:paddingTop="14dp"
         android:paddingBottom="12dp">
 
         <TextView
@@ -47,107 +58,103 @@
             android:id="@+id/hdrQuestion"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="6dp"
             android:text="@string/hdr_test_question"
             android:textColor="@android:color/white"
-            android:textSize="16sp"
+            android:textSize="17sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/hdrValues"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="#99FFFFFF"
-            android:textSize="12sp" />
+            android:layout_marginTop="2dp"
+            android:textColor="#8CFFFFFF"
+            android:textSize="13sp" />
 
         <LinearLayout
             android:id="@+id/hdrAnswers"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:gravity="center"
+            android:layout_marginTop="14dp"
             android:orientation="horizontal">
 
             <TextView
                 android:id="@+id/hdrAnswerDimmer"
-                android:layout_width="wrap_content"
-                android:layout_height="42dp"
-                android:layout_marginEnd="10dp"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
                 android:background="@drawable/bg_button_primary"
                 android:gravity="center"
-                android:minWidth="132dp"
-                android:paddingStart="22dp"
-                android:paddingEnd="22dp"
                 android:text="@string/hdr_test_answer_dimmer"
                 android:textColor="@android:color/white"
-                android:textSize="15sp" />
+                android:textSize="16sp" />
 
             <TextView
                 android:id="@+id/hdrAnswerSame"
-                android:layout_width="wrap_content"
-                android:layout_height="42dp"
-                android:layout_marginStart="10dp"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
                 android:background="@drawable/bg_button_secondary"
                 android:gravity="center"
-                android:minWidth="132dp"
-                android:paddingStart="22dp"
-                android:paddingEnd="22dp"
                 android:text="@string/hdr_test_answer_same"
                 android:textColor="@android:color/white"
-                android:textSize="15sp" />
+                android:textSize="16sp" />
         </LinearLayout>
-
-        <TextView
-            android:id="@+id/hdrProgress"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:textColor="#66FFFFFF"
-            android:textSize="11sp" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="end"
+            android:layout_marginTop="10dp"
+            android:gravity="center_vertical"
             android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/hdrProgress"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="#66FFFFFF"
+                android:textSize="11sp" />
 
             <TextView
                 android:id="@+id/hdrMode"
                 android:layout_width="wrap_content"
-                android:layout_height="34dp"
-                android:layout_marginEnd="8dp"
+                android:layout_height="32dp"
                 android:background="@drawable/bg_button_secondary"
                 android:gravity="center"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
                 android:text="@string/hdr_test_mode_ladder"
-                android:textColor="#B3FFFFFF"
+                android:textColor="#CCFFFFFF"
                 android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/hdrSave"
                 android:layout_width="wrap_content"
-                android:layout_height="34dp"
-                android:layout_marginEnd="8dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="6dp"
                 android:background="@drawable/bg_button_secondary"
                 android:gravity="center"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
                 android:text="@string/hdr_test_save"
-                android:textColor="#B3FFFFFF"
+                android:textColor="#CCFFFFFF"
                 android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/hdrClose"
                 android:layout_width="wrap_content"
-                android:layout_height="34dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="6dp"
                 android:background="@drawable/bg_button_secondary"
                 android:gravity="center"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
                 android:text="@string/hdr_test_close"
-                android:textColor="#B3FFFFFF"
+                android:textColor="#CCFFFFFF"
                 android:textSize="12sp" />
         </LinearLayout>
     </LinearLayout>

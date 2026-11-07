@@ -18,6 +18,7 @@ import android.view.Display;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -130,6 +131,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         }
 
         setContentView(R.layout.activity_hdr_test);
+        applyWindowInsets();
 
         paneA = new Pane((SurfaceView) findViewById(R.id.hdrSurface));
         paneB = new Pane((SurfaceView) findViewById(R.id.hdrSurfaceB));
@@ -150,6 +152,43 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         answerSame.setOnClickListener(v -> answer(false));
         findViewById(R.id.hdrSave).setOnClickListener(v -> saveAndFinish());
         findViewById(R.id.hdrClose).setOnClickListener(v -> finish());
+    }
+
+    /**
+     * Lay out edge to edge and keep the controls clear of the gesture bar and the cutout.
+     * Without this the card sits under the navigation pill and the system draws its own black
+     * strip over the buttons.
+     */
+    private void applyWindowInsets() {
+        final View root = findViewById(R.id.hdrRoot);
+        if (Build.VERSION.SDK_INT >= 30) {
+            getWindow().setDecorFitsSystemWindows(false);
+        }
+        else {
+            root.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+        }
+        root.setOnApplyWindowInsetsListener((view, insets) -> {
+            int left;
+            int right;
+            int bottom;
+            if (Build.VERSION.SDK_INT >= 30) {
+                android.graphics.Insets bars = insets.getInsets(
+                        WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                left = bars.left;
+                right = bars.right;
+                bottom = bars.bottom;
+            }
+            else {
+                left = insets.getSystemWindowInsetLeft();
+                right = insets.getSystemWindowInsetRight();
+                bottom = insets.getSystemWindowInsetBottom();
+            }
+            view.setPadding(left, 0, right, bottom);
+            return insets;
+        });
+        root.requestApplyInsets();
     }
 
     // ---- ladder ------------------------------------------------------------
