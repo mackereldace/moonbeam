@@ -11,6 +11,16 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <com.limelight.RatioPlotView
+        android:id="@+id/hdrRatioPlot"
+        android:layout_width="260dp"
+        android:layout_height="140dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="14dp"
+        android:layout_marginEnd="14dp"
+        android:background="#B3000000"
+        android:visibility="gone" />
+
     <LinearLayout
         android:id="@+id/hdrPanel"
         android:layout_width="wrap_content"

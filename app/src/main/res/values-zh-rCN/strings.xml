@@ -105,8 +105,6 @@
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
     <string name="hdr_test_guard_ratio">比值 %1$s→%2$s（最低 %3$s）</string>
-    <string name="hdr_profiles_slot_ratio"> · 比值 %1$s</string>
-    <string name="hdr_test_saved_ratio">比值曲线 %1$s 一并记录</string>
 
         <string name="hdr_profile_source">使用的 HDR 数值</string>
     <string name="hdr_profile_source_summary">安卓报告值，或某个实测槽位</string>

@@ -25,7 +25,6 @@ public final class HdrProfileStore {
     private static final String KEY_GLOBAL = "hdr_slot%d_global";
     private static final String KEY_BLACK = "hdr_slot%d_black";
     private static final String KEY_STABILITY = "hdr_slot%d_stability";
-    private static final String KEY_RATIO = "hdr_slot%d_ratio";
 
     public static final int FIELD_PEAK = 0;
     public static final int FIELD_GLOBAL = 1;
@@ -126,14 +125,6 @@ public final class HdrProfileStore {
                 true);
     }
 
-    public static String getRatio(Context context, int slot) {
-        return prefs(context).getString(String.format(Locale.US, KEY_RATIO, slot), "");
-    }
-
-    public static void setRatio(Context context, int slot, String summary) {
-        prefs(context).edit().putString(String.format(Locale.US, KEY_RATIO, slot), summary).apply();
-    }
-
     /** One line per slot, for the dialog in Settings. */
     public static String describe(Context context, HdrDisplayCapabilities caps) {
         StringBuilder sb = new StringBuilder();
@@ -148,16 +139,10 @@ public final class HdrProfileStore {
                     value(get(context, slot, FIELD_PEAK), true),
                     value(get(context, slot, FIELD_BLACK), false),
                     value(get(context, slot, FIELD_GLOBAL), true),
-                    duration(context, get(context, slot, FIELD_STABILITY))
-                            + ratioSuffix(context, getRatio(context, slot))));
+                    duration(context, get(context, slot, FIELD_STABILITY))));
             sb.append('\n');
         }
         return sb.toString().trim();
-    }
-
-    private static String ratioSuffix(Context context, String summary) {
-        return summary == null || summary.isEmpty()
-                ? "" : context.getString(R.string.hdr_profiles_slot_ratio, summary);
     }
 
     private static String duration(Context context, float seconds) {

@@ -59,6 +59,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private boolean guarding;
     private long guardStartMillis;
     private double guardDimNits;
+    private RatioPlotView ratioPlot;
     private float ratioFirst;
     private float ratioLast;
     private float ratioMin;
@@ -120,6 +121,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         questionView = findViewById(R.id.hdrQuestion);
         valuesView = findViewById(R.id.hdrValues);
         progressView = findViewById(R.id.hdrProgress);
+        ratioPlot = findViewById(R.id.hdrRatioPlot);
         modeButtons = new TextView[] {
                 findViewById(R.id.hdrModePeak),
                 findViewById(R.id.hdrModeGlobal),
@@ -423,6 +425,8 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
         guarding = true;
         guardStartMillis = SystemClock.elapsedRealtime();
         guardDimNits = peakNits * 0.8;
+        ratioPlot.setVisibility(View.VISIBLE);
+        ratioPlot.clear();
         ratioFirst = currentRatio();
         ratioLast = ratioFirst;
         ratioMin = ratioFirst;
@@ -438,6 +442,9 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private void stopGuarding() {
         guarding = false;
         handler.removeCallbacks(ticker);
+        if (ratioPlot != null) {
+            ratioPlot.setVisibility(View.GONE);
+        }
     }
 
     private final Runnable ticker = new Runnable() {
@@ -447,6 +454,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
                 return;
             }
             float ratio = currentRatio();
+            ratioPlot.add(ratio);
             if (ratio > 0f) {
                 if (ratioFirst <= 0f) {
                     ratioFirst = ratio;
@@ -582,7 +590,7 @@ public class HdrTestActivity extends Activity implements SurfaceHolder.Callback 
     private void saveHoldTime() {
         int seconds = Math.max(1, elapsedSeconds());
         HdrProfileStore.set(this, slot, HdrProfileStore.FIELD_STABILITY, seconds);
-        HdrProfileStore.setRatio(this, slot, ratioText(ratioFirst) + "→" + ratioText(ratioLast));
+
         Toast.makeText(this, getString(R.string.hdr_test_saved_time, secondsText(seconds), slot + 1),
                 Toast.LENGTH_LONG).show();
     }
