@@ -144,6 +144,8 @@
     <string name="addpc_wrong_sitelocal">That address doesn\'t look right. You must use your router\'s public IP address for streaming over the Internet.</string>
 
     <!-- Preferences -->
+    <string name="toolbox_cursor_toggle">Toggle host cursor</string>
+    <string name="toolbox_cursor_sent">Shortcut sent</string>
 
     <string name="toolbox_exit">Exit stream</string>
     <string name="toolbox_perf">Performance: off</string>

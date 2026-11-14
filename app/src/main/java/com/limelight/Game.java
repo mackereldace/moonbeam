@@ -2363,6 +2363,11 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                     ? R.string.toolbox_perf : R.string.toolbox_perf_on);
         });
 
+        findViewById(R.id.toolboxCursor).setOnClickListener(v -> {
+            hideToolbox();
+            sendHostCursorShortcut();
+        });
+
         findViewById(R.id.toolboxKeyboard).setOnClickListener(v -> {
             hideToolbox();
             toggleKeyboard();
@@ -2371,6 +2376,38 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         // Anywhere outside the panel closes it, and that touch must not reach the host either.
         toolboxLayer.setOnClickListener(v -> hideToolbox());
         findViewById(R.id.toolboxPanel).setOnClickListener(v -> { });
+    }
+
+    /**
+     * Sends the host's cursor shortcut: Ctrl + Alt + Shift + N.
+     *
+     * Sunshine flips its display_cursor flag from the keyboard packet handler, so the combination
+     * has to arrive as input rather than be typed on the host's own keyboard - pressing it locally
+     * never reaches that code path. The modifiers are sent as real key events because the host
+     * tracks them from the packet stream, not from the modifier bitmask alone.
+     */
+    private void sendHostCursorShortcut() {
+        if (conn == null) {
+            return;
+        }
+        final short KEY_CTRL = 0xA2;   // VK_LCONTROL
+        final short KEY_ALT = 0xA4;    // VK_LMENU
+        final short KEY_SHIFT = 0xA0;  // VK_LSHIFT
+        final short KEY_N = 0x4E;      // VK_N
+        final byte ALL = KeyboardPacket.MODIFIER_CTRL
+                | KeyboardPacket.MODIFIER_ALT
+                | KeyboardPacket.MODIFIER_SHIFT;
+
+        conn.sendKeyboardInput(KEY_CTRL, KeyboardPacket.KEY_DOWN, KeyboardPacket.MODIFIER_CTRL, (byte) 0);
+        conn.sendKeyboardInput(KEY_ALT, KeyboardPacket.KEY_DOWN, (byte) (KeyboardPacket.MODIFIER_CTRL | KeyboardPacket.MODIFIER_ALT), (byte) 0);
+        conn.sendKeyboardInput(KEY_SHIFT, KeyboardPacket.KEY_DOWN, ALL, (byte) 0);
+        conn.sendKeyboardInput(KEY_N, KeyboardPacket.KEY_DOWN, ALL, (byte) 0);
+        conn.sendKeyboardInput(KEY_N, KeyboardPacket.KEY_UP, ALL, (byte) 0);
+        conn.sendKeyboardInput(KEY_SHIFT, KeyboardPacket.KEY_UP, (byte) (KeyboardPacket.MODIFIER_CTRL | KeyboardPacket.MODIFIER_ALT), (byte) 0);
+        conn.sendKeyboardInput(KEY_ALT, KeyboardPacket.KEY_UP, KeyboardPacket.MODIFIER_CTRL, (byte) 0);
+        conn.sendKeyboardInput(KEY_CTRL, KeyboardPacket.KEY_UP, (byte) 0, (byte) 0);
+
+        Toast.makeText(this, R.string.toolbox_cursor_sent, Toast.LENGTH_SHORT).show();
     }
 
     private void toggleToolbox() {

@@ -93,6 +93,11 @@
                 android:text="@string/toolbox_perf" />
 
             <TextView
+                android:id="@+id/toolboxCursor"
+                style="@style/ToolboxButton"
+                android:text="@string/toolbox_cursor_toggle" />
+
+            <TextView
                 android:id="@+id/toolboxKeyboard"
                 style="@style/ToolboxButton"
                 android:text="@string/toolbox_keyboard" />
