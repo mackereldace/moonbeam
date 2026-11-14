@@ -162,10 +162,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
     private int requestedNotificationOverlayVisibility = View.GONE;
     private TextView performanceOverlayView;
     private View toolboxLayer;
-    private com.limelight.ui.CursorOverlayView cursorOverlay;
-    private TextView toolboxCursorButton;
     private TextView toolboxPerfButton;
-    private boolean cursorEnabled;
     private PerfHudView perfHudView;
     private int perfOverlayMode = PreferenceConfiguration.PERF_OVERLAY_OFF;
     /** Adaptive bitrate controller for this session, or null when disabled. */
@@ -1899,10 +1896,6 @@ public class Game extends Activity implements SurfaceHolder.Callback,
     // Returns true if the event was consumed
     // NB: View is only present if called from a view callback
     private boolean handleMotionEvent(View view, MotionEvent event) {
-        // The pointer follows the input the client is sending; there is no host cursor to mirror.
-        if (cursorEnabled && cursorOverlay != null) {
-            cursorOverlay.setPosition(event.getX(), event.getY());
-        }
         // Pass through mouse/touch/joystick input if we're not grabbing
         if (!grabbedInput) {
             return false;
@@ -2352,25 +2345,16 @@ public class Game extends Activity implements SurfaceHolder.Callback,
      */
     private void setupToolbox() {
         toolboxLayer = findViewById(R.id.toolboxLayer);
-        cursorOverlay = findViewById(R.id.cursorOverlay);
-        toolboxCursorButton = findViewById(R.id.toolboxCursor);
         toolboxPerfButton = findViewById(R.id.toolboxPerf);
 
         findViewById(R.id.toolboxExit).setOnClickListener(v -> {
             hideToolbox();
-            stopConnection();
-            finish();
-        });
-
-        toolboxCursorButton.setOnClickListener(v -> {
-            cursorEnabled = !cursorEnabled;
-            cursorOverlay.setVisibility(cursorEnabled ? View.VISIBLE : View.GONE);
-            toolboxCursorButton.setText(cursorEnabled
-                    ? R.string.toolbox_cursor_on : R.string.toolbox_cursor);
+            exitStreamCompletely();
         });
 
         toolboxPerfButton.setOnClickListener(v -> {
-            boolean showing = performanceOverlayView.getVisibility() == View.VISIBLE;
+            boolean showing = perfHudView.getVisibility() == View.VISIBLE;
+            perfHudView.setVisibility(showing ? View.GONE : View.VISIBLE);
             performanceOverlayView.setVisibility(showing ? View.GONE : View.VISIBLE);
             toolboxPerfButton.setText(showing
                     ? R.string.toolbox_perf : R.string.toolbox_perf_on);
@@ -2384,6 +2368,52 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         // Anywhere outside the panel closes it, and that touch must not reach the host either.
         toolboxLayer.setOnClickListener(v -> hideToolbox());
         findViewById(R.id.toolboxPanel).setOnClickListener(v -> { });
+    }
+
+    /**
+     * Ends the session for real before leaving.
+     *
+     * The normal teardown fires conn.stop() on a background thread and closes the activity right
+     * away, so the process can go to background before the host is told anything - which leaves a
+     * paused session on the host that has to be dismissed from the client again. Waiting for the
+     * stop to finish costs a moment and leaves nothing behind.
+     */
+    private void exitStreamCompletely() {
+        if (conn == null) {
+            finish();
+            return;
+        }
+        connected = false;
+        connecting = false;
+        if (controllerHandler != null) {
+            controllerHandler.stop();
+        }
+        UiHelper.notifyStreamEnded(this);
+
+        final SpinnerDialog dialog = SpinnerDialog.displayDialog(this,
+                getString(R.string.conn_establishing_title), getString(R.string.toolbox_exiting), true);
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    conn.stop();
+                }
+                catch (RuntimeException ignored) {
+                }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (dialog != null) {
+                            dialog.dismiss();
+                        }
+                        if (!isFinishing()) {
+                            finish();
+                        }
+                    }
+                });
+            }
+        }, "exit-stream").start();
     }
 
     private void toggleToolbox() {

@@ -60,13 +60,6 @@
         android:preferKeepClear="true"
         android:visibility="gone" />
 
-
-    <com.limelight.ui.CursorOverlayView
-        android:id="@+id/cursorOverlay"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone" />
-
     <FrameLayout
         android:id="@+id/toolboxLayer"
         android:layout_width="match_parent"
@@ -93,11 +86,6 @@
                 android:id="@+id/toolboxExit"
                 style="@style/ToolboxButton"
                 android:text="@string/toolbox_exit" />
-
-            <TextView
-                android:id="@+id/toolboxCursor"
-                style="@style/ToolboxButton"
-                android:text="@string/toolbox_cursor" />
 
             <TextView
                 android:id="@+id/toolboxPerf"

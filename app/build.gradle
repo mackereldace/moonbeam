@@ -69,9 +69,10 @@ android {
         // 0.8.4  校园网主机只列在线电脑并支持多选；提示文案缩短；修令牌弹窗误显示“未设置”；
         //        串流中分辨率变化时跟随更新画面长宽比（点击错位）
         // 0.9.0  串流中返回手势唤起工具箱（退出串流 / 指针 / 性能浮层 / 键盘），点击别处关闭
+        // 0.9.1  工具箱：删除自绘指针（改用主机真实光标）、性能浮层切到 PerfHud、退出串流等会话真正结束再关闭
         // 1.0.0  首个正式版
-        versionName "0.9.0"
-        versionCode = 900
+        versionName "0.9.1"
+        versionCode = 901
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'
