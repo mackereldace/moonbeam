@@ -72,9 +72,10 @@ android {
         // 0.9.1  工具箱：删除自绘指针（改用主机真实光标）、性能浮层切到 PerfHud、退出串流等会话真正结束再关闭
         // 0.9.2  退出串流改回上游做法：只 finish()，会话在 onStop 里结束（等待式会卡在转圈上）
         // 0.9.3  工具箱新增「切换主机光标」：向主机发送 Ctrl+Alt+Shift+N
+        // 0.9.4  退出串流：不再依赖 connecting/connected 标志，必定发出一次 stop，最多等 2.5 秒再关闭
         // 1.0.0  首个正式版
-        versionName "0.9.3"
-        versionCode = 903
+        versionName "0.9.4"
+        versionCode = 904
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'

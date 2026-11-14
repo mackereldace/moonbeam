@@ -162,6 +162,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
     private int requestedNotificationOverlayVisibility = View.GONE;
     private TextView performanceOverlayView;
     private View toolboxLayer;
+    private boolean stopIssued;
     private TextView toolboxPerfButton;
     private PerfHudView perfHudView;
     private int perfOverlayMode = PreferenceConfiguration.PERF_OVERLAY_OFF;
@@ -2349,10 +2350,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
 
         findViewById(R.id.toolboxExit).setOnClickListener(v -> {
             hideToolbox();
-            // Same shape as the upstream client: leave the activity and let onStop() tear the
-            // session down. Waiting here instead turned a network stall into a spinner that
-            // never finished, which is worse than the pause it was meant to avoid.
-            finish();
+            exitStream();
         });
 
         toolboxPerfButton.setOnClickListener(v -> {
@@ -2410,6 +2408,49 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         Toast.makeText(this, R.string.toolbox_cursor_sent, Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * Leaves the stream and makes sure the host is told about it.
+     *
+     * finish() alone races the teardown: the activity goes away and the process can be suspended
+     * before conn.stop() finishes its goodbye, which is what leaves a paused session behind that
+     * has to be dismissed a second time. The exit therefore issues the stop itself and closes the
+     * activity when it returns - bounded, so a dead network cannot trap the user here.
+     */
+    private void exitStream() {
+        if (conn == null) {
+            finish();
+            return;
+        }
+
+        final Thread stopper = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                stopConnection();
+            }
+        }, "exit-stream-stop");
+        stopper.start();
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    stopper.join(2500);
+                }
+                catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
+                }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!isFinishing()) {
+                            finish();
+                        }
+                    }
+                });
+            }
+        }, "exit-stream-wait").start();
+    }
+
     private void toggleToolbox() {
         if (toolboxLayer.getVisibility() == View.VISIBLE) {
             hideToolbox();
@@ -2437,28 +2478,44 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         super.onBackPressed();
     }
 
+    /**
+     * Ends the session, once.
+     *
+     * This used to be gated on the connecting/connected flags, which meant that anything that
+     * cleared them early - a failed handshake, a decoder restart - left the stop unsent and the
+     * host holding a session that the user had already dismissed on the client. The stop is now
+     * issued whenever a connection object exists, guarded only against sending it twice.
+     */
     private void stopConnection() {
         SessionTelemetry.get().finish(this);
-        if (connecting || connected) {
-            connecting = connected = false;
-            updatePipAutoEnter();
+        if (conn == null || stopIssued) {
+            return;
+        }
+        stopIssued = true;
 
+        connecting = false;
+        connected = false;
+        updatePipAutoEnter();
+
+        if (controllerHandler != null) {
             controllerHandler.stop();
+        }
 
-            // Update GameManager state to indicate we're no longer in game
-            UiHelper.notifyStreamEnded(this);
+        UiHelper.notifyStreamEnded(this);
 
-            // Stop may take a few hundred ms to do some network I/O to tell
-            // the server we're going away and clean up. Let it run in a separate
-            // thread to keep things smooth for the UI. Inside moonlight-common,
-            // we prevent another thread from starting a connection before and
-            // during the process of stopping this one.
-            new Thread() {
-                public void run() {
+        // Stop may take a few hundred ms to do some network I/O to tell the server we are going
+        // away and clean up. Let it run in a separate thread to keep things smooth for the UI.
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
                     conn.stop();
                 }
-            }.start();
-        }
+                catch (RuntimeException e) {
+                    LimeLog.severe("conn.stop() failed: " + e);
+                }
+            }
+        }, "stream-stop").start();
     }
 
     @Override
