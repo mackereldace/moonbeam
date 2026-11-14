@@ -145,6 +145,12 @@
 
     <!-- Preferences -->
 
+    <string name="zfw_pick_host">Pick a host</string>
+    <string name="zfw_device_row">%1$s  %2$s  ·  %3$s</string>
+    <string name="zfw_online">online</string>
+    <string name="zfw_offline">offline</string>
+    <string name="zfw_no_devices">The service reports no devices</string>
+
     <string name="category_zfw_settings">Campus network address</string>
     <string name="title_zfw_api_url">Device service URL</string>
     <string name="summary_zfw_api_url">Where the campus device service runs, e.g. http://mac-mini-2024:8791</string>
@@ -152,7 +158,7 @@
     <string name="summary_zfw_api_token">Read from out/history/.api_token on the host</string>
     <string name="title_zfw_host_name">Host device name</string>
     <string name="summary_zfw_host_name">Which device in the list is the machine you stream from</string>
-    <string name="zfw_lookup_button">Get from campus network</string>
+    <string name="zfw_lookup_button">Pick a host on the campus network</string>
     <string name="zfw_lookup_running">Looking up…</string>
     <string name="zfw_lookup_ok">%1$s → %2$s</string>
     <string name="zfw_lookup_failed">Lookup failed: %1$s</string>

@@ -105,6 +105,12 @@
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
 
+    <string name="zfw_pick_host">选择校园网主机</string>
+    <string name="zfw_device_row">%1$s  %2$s  ·  %3$s</string>
+    <string name="zfw_online">在线</string>
+    <string name="zfw_offline">离线</string>
+    <string name="zfw_no_devices">服务没有返回任何设备</string>
+
     <string name="category_zfw_settings">校园网地址</string>
     <string name="title_zfw_api_url">设备服务地址</string>
     <string name="summary_zfw_api_url">跑设备服务的地址，例如 http://mac-mini-2024:8791</string>
@@ -112,7 +118,7 @@
     <string name="summary_zfw_api_token">主机上 out/history/.api_token 的内容</string>
     <string name="title_zfw_host_name">主机设备名</string>
     <string name="summary_zfw_host_name">列表里哪台设备是你要串流的主机</string>
-    <string name="zfw_lookup_button">从校园网取地址</string>
+    <string name="zfw_lookup_button">选择校园网主机</string>
     <string name="zfw_lookup_running">正在查询…</string>
     <string name="zfw_lookup_ok">%1$s → %2$s</string>
     <string name="zfw_lookup_failed">查询失败：%1$s</string>

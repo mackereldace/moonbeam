@@ -219,12 +219,6 @@
             android:summary="@string/summary_zfw_api_token"
             android:dialogMessage="@string/summary_zfw_api_token"
             android:defaultValue="" />
-        <EditTextPreference
-            android:key="text_zfw_host_name"
-            android:title="@string/title_zfw_host_name"
-            android:summary="@string/summary_zfw_host_name"
-            android:dialogMessage="@string/summary_zfw_host_name"
-            android:defaultValue="Mac mini" />
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/category_ui_settings"
         android:key="category_ui_settings">

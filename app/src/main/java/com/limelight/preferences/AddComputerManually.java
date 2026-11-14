@@ -314,33 +314,7 @@ public class AddComputerManually extends Activity {
             lookupButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    lookupButton.setEnabled(false);
-                    Toast.makeText(AddComputerManually.this, R.string.zfw_lookup_running,
-                            Toast.LENGTH_SHORT).show();
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            final ZfwDeviceApi.Result result = ZfwDeviceApi.resolveHost(AddComputerManually.this);
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    lookupButton.setEnabled(true);
-                                    if (result.isSuccess()) {
-                                        hostText.setText(result.ip);
-                                        fallbackAddress = ZfwDeviceApi.serviceHost(AddComputerManually.this);
-                                        Toast.makeText(AddComputerManually.this,
-                                                getString(R.string.zfw_lookup_ok, result.name, result.ip),
-                                                Toast.LENGTH_LONG).show();
-                                    }
-                                    else {
-                                        Toast.makeText(AddComputerManually.this,
-                                                getString(R.string.zfw_lookup_failed, result.error),
-                                                Toast.LENGTH_LONG).show();
-                                    }
-                                }
-                            });
-                        }
-                    }, "zfw-lookup").start();
+                    showCampusDevices();
                 }
             });
         }
@@ -355,6 +329,61 @@ public class AddComputerManually extends Activity {
         // Bind to the ComputerManager service
         bindService(new Intent(AddComputerManually.this,
                     ComputerManagerService.class), serviceConnection, Service.BIND_AUTO_CREATE);
+    }
+
+    /**
+     * Lists what the campus service sees and lets the user pick the machine, instead of asking
+     * them to name it in settings beforehand: the point of the lookup is that the app knows which
+     * machines exist, so requiring the name up front defeats it.
+     */
+    private void showCampusDevices() {
+        Toast.makeText(this, R.string.zfw_lookup_running, Toast.LENGTH_SHORT).show();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final ZfwDeviceApi.DeviceList list = ZfwDeviceApi.listDevices(AddComputerManually.this);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!list.isSuccess()) {
+                            Toast.makeText(AddComputerManually.this,
+                                    getString(R.string.zfw_lookup_failed, list.error),
+                                    Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        if (list.devices.isEmpty()) {
+                            Toast.makeText(AddComputerManually.this,
+                                    R.string.zfw_no_devices, Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        showDeviceDialog(list.devices);
+                    }
+                });
+            }
+        }, "zfw-devices").start();
+    }
+
+    private void showDeviceDialog(final java.util.List<ZfwDeviceApi.Device> devices) {
+        final String[] labels = new String[devices.size()];
+        for (int i = 0; i < devices.size(); i++) {
+            ZfwDeviceApi.Device device = devices.get(i);
+            labels[i] = getString(R.string.zfw_device_row,
+                    device.online ? getString(R.string.zfw_online) : getString(R.string.zfw_offline),
+                    device.name.isEmpty() ? device.ip : device.name,
+                    device.ip);
+        }
+        new android.app.AlertDialog.Builder(this)
+                .setTitle(R.string.zfw_pick_host)
+                .setItems(labels, new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface dialog, int which) {
+                        ZfwDeviceApi.Device device = devices.get(which);
+                        hostText.setText(device.ip);
+                        fallbackAddress = ZfwDeviceApi.serviceHost(AddComputerManually.this);
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
     // Returns true if the event should be eaten

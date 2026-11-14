@@ -807,7 +807,6 @@ public class StreamSettings extends Activity {
                 {"hdr_profiles", "0"},
                 {"text_zfw_api_url", "4"},
                 {"text_zfw_api_token", "4"},
-                {"text_zfw_host_name", "4"},
                 {"list_hdr_profile_source", "0"},
                 {"list_resolution", "0"},
                 {"list_fps", "0"},

@@ -64,9 +64,10 @@ android {
         // 0.7.21 撤销该禁用：低亮度比值高、亮度满比值低，两种状态都能正常测峰值
         // 0.8.0  接入校园网设备服务：按设备名查主机当前 IP，填进添加主机页
         // 0.8.1  查到的校园 IP 记作 localAddress（优先），Tailscale 地址记作 manualAddress（回退）
+        // 0.8.2  去掉“主机设备名”，改为列出校园网设备让用户挑（电脑类排前面）
         // 1.0.0  首个正式版
-        versionName "0.8.1"
-        versionCode = 801
+        versionName "0.8.2"
+        versionCode = 802
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'
