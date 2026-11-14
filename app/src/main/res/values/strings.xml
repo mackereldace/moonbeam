@@ -144,6 +144,15 @@
     <string name="addpc_wrong_sitelocal">That address doesn\'t look right. You must use your router\'s public IP address for streaming over the Internet.</string>
 
     <!-- Preferences -->
+
+    <string name="title_sunshine_token">Sunshine token</string>
+    <string name="summary_sunshine_token">display_mode_token from sunshine.conf. Needed to change resolution from here.</string>
+    <string name="toolbox_resolution">Resolution…</string>
+    <string name="resolution_title">Change host resolution</string>
+    <string name="resolution_apply">Apply</string>
+    <string name="resolution_sent">Requested %1$s × %2$s</string>
+    <string name="resolution_failed">Failed: %1$s</string>
+    <string name="resolution_no_token">Set the Sunshine token in settings first</string>
     <string name="toolbox_cursor_toggle">Toggle host cursor</string>
     <string name="toolbox_cursor_sent">Shortcut sent</string>
 

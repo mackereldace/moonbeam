@@ -43,6 +43,10 @@ public class AbsoluteTouchContext implements TouchContext {
         }
     };
 
+    private boolean loggedGeometry;
+    private int viewWidth;
+    private int viewHeight;
+
     private final NvConnection conn;
     private final int actionIndex;
     private final View targetView;
@@ -114,6 +118,12 @@ public class AbsoluteTouchContext implements TouchContext {
         eventX = Math.min(Math.max(eventX, 0), targetView.getWidth());
         eventY = Math.min(Math.max(eventY, 0), targetView.getHeight());
 
+        if (!loggedGeometry || viewWidth != targetView.getWidth() || viewHeight != targetView.getHeight()) {
+            loggedGeometry = true;
+            viewWidth = targetView.getWidth();
+            viewHeight = targetView.getHeight();
+            com.limelight.LimeLog.info("Touch space: view " + viewWidth + "x" + viewHeight);
+        }
         conn.sendMousePosition((short)eventX, (short)eventY, (short)targetView.getWidth(), (short)targetView.getHeight());
     }
 

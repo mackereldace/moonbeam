@@ -447,6 +447,8 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         decoderRenderer.setResolutionListener(new ResolutionListener() {
             @Override
             public void onResolutionChanged(final int width, final int height) {
+                LimeLog.info("Decoder size now " + width + "x" + height
+                        + ", view " + streamView.getWidth() + "x" + streamView.getHeight());
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -2372,6 +2374,11 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                     ? R.string.toolbox_perf : R.string.toolbox_perf_on);
         });
 
+        findViewById(R.id.toolboxResolution).setOnClickListener(v -> {
+            hideToolbox();
+            showResolutionDialog();
+        });
+
         findViewById(R.id.toolboxCursor).setOnClickListener(v -> {
             hideToolbox();
             sendHostCursorShortcut();
@@ -2489,6 +2496,86 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         catch (Exception e) {
             LimeLog.info("quitApp failed: " + e);
         }
+    }
+
+    /** Two numbers and a few presets: the host applies it through displayplacer. */
+    private void showResolutionDialog() {
+        if (com.limelight.utils.SunshineClient.token(this).isEmpty()) {
+            Toast.makeText(this, R.string.resolution_no_token, Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        final android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        layout.setPadding(pad, pad, pad, pad);
+
+        final android.widget.EditText widthField = new android.widget.EditText(this);
+        widthField.setHint("width");
+        widthField.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        widthField.setText(String.valueOf(prefConfig.width));
+        layout.addView(widthField);
+
+        final android.widget.EditText heightField = new android.widget.EditText(this);
+        heightField.setHint("height");
+        heightField.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        heightField.setText(String.valueOf(prefConfig.height));
+        layout.addView(heightField);
+
+        // Presets are just shortcuts into the same two fields, so the user can see and edit them.
+        final int[][] presets = { {1565, 720}, {1524, 1016}, {3048, 2032}, {1920, 1080} };
+        final android.widget.LinearLayout presetRow = new android.widget.LinearLayout(this);
+        presetRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        for (int[] preset : presets) {
+            android.widget.TextView chip = new android.widget.TextView(this);
+            chip.setText(preset[0] + "×" + preset[1]);
+            chip.setTextSize(12);
+            chip.setPadding(pad / 2, pad / 3, pad / 2, pad / 3);
+            int margin = pad / 4;
+            android.widget.LinearLayout.LayoutParams lp =
+                    new android.widget.LinearLayout.LayoutParams(
+                            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+            lp.setMargins(margin, 0, margin, 0);
+            chip.setLayoutParams(lp);
+            chip.setOnClickListener(v -> {
+                widthField.setText(String.valueOf(preset[0]));
+                heightField.setText(String.valueOf(preset[1]));
+            });
+            presetRow.addView(chip);
+        }
+        layout.addView(presetRow);
+
+        new android.app.AlertDialog.Builder(this)
+                .setTitle(R.string.resolution_title)
+                .setView(layout)
+                .setPositiveButton(R.string.resolution_apply, (dialog, which) -> {
+                    int w;
+                    int h;
+                    try {
+                        w = Integer.parseInt(widthField.getText().toString().trim());
+                        h = Integer.parseInt(heightField.getText().toString().trim());
+                    }
+                    catch (NumberFormatException e) {
+                        return;
+                    }
+                    applyDisplayMode(w, h);
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void applyDisplayMode(final int width, final int height) {
+        final String host = sessionHost;
+        new Thread(() -> {
+            final String error = com.limelight.utils.SunshineClient.requestDisplayMode(
+                    Game.this, host, width, height);
+            runOnUiThread(() -> Toast.makeText(Game.this,
+                    error == null
+                            ? getString(R.string.resolution_sent, width, height)
+                            : getString(R.string.resolution_failed, error),
+                    Toast.LENGTH_LONG).show());
+        }, "display-mode").start();
     }
 
     private void toggleToolbox() {

@@ -214,6 +214,10 @@
             android:dialogMessage="@string/summary_zfw_api_url"
             android:defaultValue="" />
         <com.limelight.preferences.SecretPreference
+            android:key="text_sunshine_token"
+            android:title="@string/title_sunshine_token"
+            android:dialogMessage="@string/summary_sunshine_token" />
+        <com.limelight.preferences.SecretPreference
             android:key="text_zfw_api_token"
             android:title="@string/title_zfw_api_token"
             android:dialogMessage="@string/summary_zfw_api_token" />

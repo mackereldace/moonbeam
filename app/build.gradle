@@ -74,9 +74,10 @@ android {
         // 0.9.3  工具箱新增「切换主机光标」：向主机发送 Ctrl+Alt+Shift+N
         // 0.9.4  退出串流：不再依赖 connecting/connected 标志，必定发出一次 stop，最多等 2.5 秒再关闭
         // 0.9.5  退出串流补上 quitApp（V+ 的 doStopAndQuit）：停流之后还要让主机退出该应用
+        // 0.9.6  工具箱可改主机分辨率：两格输入 + 预设，主机侧走 display-mode 接口调 displayplacer
         // 1.0.0  首个正式版
-        versionName "0.9.5"
-        versionCode = 905
+        versionName "0.9.6"
+        versionCode = 906
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'

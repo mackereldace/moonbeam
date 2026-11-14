@@ -805,6 +805,7 @@ public class StreamSettings extends Activity {
                 {"hdr_brightness_report", "0"},
                 {"hdr_display_test", "0"},
                 {"hdr_profiles", "0"},
+                {"text_sunshine_token", "4"},
                 {"text_zfw_api_url", "4"},
                 {"text_zfw_api_token", "4"},
                 {"list_hdr_profile_source", "0"},

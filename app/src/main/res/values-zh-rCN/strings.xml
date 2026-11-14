@@ -104,6 +104,15 @@
     <string name="addpc_enter_ip">请输入一个IP地址</string>
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
+
+    <string name="title_sunshine_token">Sunshine 令牌</string>
+    <string name="summary_sunshine_token">sunshine.conf 里的 display_mode_token，用于从手机改分辨率</string>
+    <string name="toolbox_resolution">分辨率…</string>
+    <string name="resolution_title">修改主机分辨率</string>
+    <string name="resolution_apply">应用</string>
+    <string name="resolution_sent">已请求 %1$s × %2$s</string>
+    <string name="resolution_failed">失败：%1$s</string>
+    <string name="resolution_no_token">请先在设置里填 Sunshine 令牌</string>
     <string name="toolbox_cursor_toggle">切换主机光标</string>
     <string name="toolbox_cursor_sent">已发送快捷键</string>
 
