@@ -38,6 +38,17 @@
     </EditText>
 
     <Button
+        android:id="@+id/zfwLookupButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/hostTextView"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="12dp"
+        android:text="@string/zfw_lookup_button"
+        android:visibility="gone" />
+
+    <Button
         android:id="@+id/addPcButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

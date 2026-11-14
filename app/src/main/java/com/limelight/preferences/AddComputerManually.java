@@ -22,6 +22,7 @@ import com.limelight.utils.Dialog;
 import com.limelight.utils.ServerHelper;
 import com.limelight.utils.SpinnerDialog;
 import com.limelight.utils.UiHelper;
+import com.limelight.utils.ZfwDeviceApi;
 
 import android.app.Activity;
 import android.app.Service;
@@ -295,6 +296,42 @@ public class AddComputerManually extends Activity {
                 return false;
             }
         });
+
+        final View lookupButton = findViewById(R.id.zfwLookupButton);
+        if (ZfwDeviceApi.isConfigured(this)) {
+            lookupButton.setVisibility(View.VISIBLE);
+            lookupButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    lookupButton.setEnabled(false);
+                    Toast.makeText(AddComputerManually.this, R.string.zfw_lookup_running,
+                            Toast.LENGTH_SHORT).show();
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            final ZfwDeviceApi.Result result = ZfwDeviceApi.resolveHost(AddComputerManually.this);
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    lookupButton.setEnabled(true);
+                                    if (result.isSuccess()) {
+                                        hostText.setText(result.ip);
+                                        Toast.makeText(AddComputerManually.this,
+                                                getString(R.string.zfw_lookup_ok, result.name, result.ip),
+                                                Toast.LENGTH_LONG).show();
+                                    }
+                                    else {
+                                        Toast.makeText(AddComputerManually.this,
+                                                getString(R.string.zfw_lookup_failed, result.error),
+                                                Toast.LENGTH_LONG).show();
+                                    }
+                                }
+                            });
+                        }
+                    }, "zfw-lookup").start();
+                }
+            });
+        }
 
         findViewById(R.id.addPcButton).setOnClickListener(new View.OnClickListener() {
             @Override

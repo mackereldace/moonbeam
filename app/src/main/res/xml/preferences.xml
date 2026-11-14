@@ -205,6 +205,27 @@
             android:summary="@string/summary_checkbox_host_audio"
             android:defaultValue="false" />
     </PreferenceCategory>
+    <PreferenceCategory android:title="@string/category_zfw_settings"
+        android:key="category_zfw_settings">
+        <EditTextPreference
+            android:key="text_zfw_api_url"
+            android:title="@string/title_zfw_api_url"
+            android:summary="@string/summary_zfw_api_url"
+            android:dialogMessage="@string/summary_zfw_api_url"
+            android:defaultValue="http://100.123.136.82:8791" />
+        <EditTextPreference
+            android:key="text_zfw_api_token"
+            android:title="@string/title_zfw_api_token"
+            android:summary="@string/summary_zfw_api_token"
+            android:dialogMessage="@string/summary_zfw_api_token"
+            android:defaultValue="" />
+        <EditTextPreference
+            android:key="text_zfw_host_name"
+            android:title="@string/title_zfw_host_name"
+            android:summary="@string/summary_zfw_host_name"
+            android:dialogMessage="@string/summary_zfw_host_name"
+            android:defaultValue="Mac mini" />
+    </PreferenceCategory>
     <PreferenceCategory android:title="@string/category_ui_settings"
         android:key="category_ui_settings">
         <CheckBoxPreference

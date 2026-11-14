@@ -144,6 +144,18 @@
     <string name="addpc_wrong_sitelocal">That address doesn\'t look right. You must use your router\'s public IP address for streaming over the Internet.</string>
 
     <!-- Preferences -->
+
+    <string name="category_zfw_settings">Campus network address</string>
+    <string name="title_zfw_api_url">Device service URL</string>
+    <string name="summary_zfw_api_url">Where the campus device service runs, e.g. http://mac-mini-2024:8791</string>
+    <string name="title_zfw_api_token">Access token</string>
+    <string name="summary_zfw_api_token">Read from out/history/.api_token on the host</string>
+    <string name="title_zfw_host_name">Host device name</string>
+    <string name="summary_zfw_host_name">Which device in the list is the machine you stream from</string>
+    <string name="zfw_lookup_button">Get from campus network</string>
+    <string name="zfw_lookup_running">Looking up…</string>
+    <string name="zfw_lookup_ok">%1$s → %2$s</string>
+    <string name="zfw_lookup_failed">Lookup failed: %1$s</string>
     <string name="hdr_test_wait_headroom">System is compressing · waiting for ratio %1$s</string>
     <string name="hdr_test_implied_white">Implied SDR white ≈ %1$d nit at the current ratio</string>
 

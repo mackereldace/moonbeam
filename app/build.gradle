@@ -62,9 +62,10 @@ android {
         // 0.7.19 峰值测完后按当前比值推算出 SDR 白点，便于核对比值与实测是否自洽
         // 0.7.20 压缩状态下禁用答题按钮并提示等待满 headroom，避免测到压缩曲线
         // 0.7.21 撤销该禁用：低亮度比值高、亮度满比值低，两种状态都能正常测峰值
+        // 0.8.0  接入校园网设备服务：按设备名查主机当前 IP，填进添加主机页
         // 1.0.0  首个正式版
-        versionName "0.7.21"
-        versionCode = 721
+        versionName "0.8.0"
+        versionCode = 800
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'
