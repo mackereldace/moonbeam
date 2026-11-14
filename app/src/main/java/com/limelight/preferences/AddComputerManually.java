@@ -44,6 +44,8 @@ public class AddComputerManually extends Activity {
     private ComputerManagerService.ComputerManagerBinder managerBinder;
     private final LinkedBlockingQueue<String> computersToAdd = new LinkedBlockingQueue<>();
     private Thread addThread;
+    /** Filled by the campus lookup: the host's stable Tailscale address, used as the fallback. */
+    private String fallbackAddress;
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, final IBinder binder) {
             managerBinder = ((ComputerManagerService.ComputerManagerBinder)binder);
@@ -144,7 +146,16 @@ public class AddComputerManually extends Activity {
                     port = NvHTTP.DEFAULT_HTTP_PORT;
                 }
 
-                details.manualAddress = new ComputerDetails.AddressTuple(host, port);
+                // Campus first, Tailscale second: the poller tries local, then manual, so the
+                // native path wins when the phone is on the campus network and the tunnel is
+                // only used when that address is not reachable.
+                if (fallbackAddress != null && !fallbackAddress.equals(host)) {
+                    details.localAddress = new ComputerDetails.AddressTuple(host, port);
+                    details.manualAddress = new ComputerDetails.AddressTuple(fallbackAddress, port);
+                }
+                else {
+                    details.manualAddress = new ComputerDetails.AddressTuple(host, port);
+                }
                 success = managerBinder.addComputerBlocking(details);
                 if (!success){
                     wrongSiteLocal = isWrongSubnetSiteLocalAddress(host);
@@ -316,6 +327,7 @@ public class AddComputerManually extends Activity {
                                     lookupButton.setEnabled(true);
                                     if (result.isSuccess()) {
                                         hostText.setText(result.ip);
+                                        fallbackAddress = ZfwDeviceApi.serviceHost(AddComputerManually.this);
                                         Toast.makeText(AddComputerManually.this,
                                                 getString(R.string.zfw_lookup_ok, result.name, result.ip),
                                                 Toast.LENGTH_LONG).show();

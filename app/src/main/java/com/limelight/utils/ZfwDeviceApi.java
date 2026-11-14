@@ -139,6 +139,22 @@ public final class ZfwDeviceApi {
         return new Result(null, null, "not found");
     }
 
+    /** The host part of the configured service URL: the Mac's own address on the tailnet. */
+    public static String serviceHost(Context context) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        String baseUrl = trim(prefs.getString(PREF_API_URL, DEFAULT_API_URL));
+        if (baseUrl.isEmpty()) {
+            baseUrl = DEFAULT_API_URL;
+        }
+        try {
+            java.net.URI uri = java.net.URI.create(baseUrl);
+            return uri.getHost() == null ? "" : uri.getHost();
+        }
+        catch (IllegalArgumentException e) {
+            return "";
+        }
+    }
+
     private static String normalize(String value) {
         return value == null ? "" : value.replaceAll("[\\s·\\-]", "").toLowerCase(Locale.ROOT);
     }
