@@ -65,9 +65,10 @@ android {
         // 0.8.0  接入校园网设备服务：按设备名查主机当前 IP，填进添加主机页
         // 0.8.1  查到的校园 IP 记作 localAddress（优先），Tailscale 地址记作 manualAddress（回退）
         // 0.8.2  去掉“主机设备名”，改为列出校园网设备让用户挑（电脑类排前面）
+        // 0.8.3  去掉硬编码的 Tailscale 地址；令牌改为密文保存且不回显；连不上时提示检查 Tailscale
         // 1.0.0  首个正式版
-        versionName "0.8.2"
-        versionCode = 802
+        versionName "0.8.3"
+        versionCode = 803
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'

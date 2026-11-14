@@ -30,7 +30,16 @@ public final class ZfwDeviceApi {
     public static final String PREF_API_TOKEN = "text_zfw_api_token";
 
 
-    public static final String DEFAULT_API_URL = "http://100.123.136.82:8791";
+    /** No default: the address belongs to whoever runs the service, not to the app. */
+    public static final String DEFAULT_API_URL = "";
+
+    public static final String ERROR_NO_URL = "no_url";
+    public static final String ERROR_NO_TOKEN = "no_token";
+    public static final String ERROR_UNRESOLVED = "unresolved";
+    public static final String ERROR_TIMEOUT = "timeout";
+    public static final String ERROR_HTTP = "http";
+    public static final String ERROR_BAD_JSON = "bad_json";
+    public static final String ERROR_EMPTY = "empty";
 
 
     private static final long TIMEOUT_SECONDS = 8;
@@ -100,8 +109,9 @@ public final class ZfwDeviceApi {
 
     public static boolean isConfigured(Context context) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        String token = prefs.getString(PREF_API_TOKEN, "");
-        return token != null && !token.trim().isEmpty();
+        String token = trim(prefs.getString(PREF_API_TOKEN, ""));
+        String url = trim(prefs.getString(PREF_API_URL, DEFAULT_API_URL));
+        return !token.isEmpty() && !url.isEmpty();
     }
 
     /** Result of a device listing. */
@@ -127,10 +137,10 @@ public final class ZfwDeviceApi {
         String baseUrl = trim(prefs.getString(PREF_API_URL, DEFAULT_API_URL));
         String token = trim(prefs.getString(PREF_API_TOKEN, ""));
         if (baseUrl.isEmpty()) {
-            baseUrl = DEFAULT_API_URL;
+            return new DeviceList(null, ERROR_NO_URL);
         }
         if (token.isEmpty()) {
-            return new DeviceList(null, "no token");
+            return new DeviceList(null, ERROR_NO_TOKEN);
         }
 
         OkHttpClient client = new OkHttpClient.Builder()
@@ -144,19 +154,26 @@ public final class ZfwDeviceApi {
 
         try (Response response = client.newCall(request).execute()) {
             if (response.body() == null) {
-                return new DeviceList(null, "empty response");
+                return new DeviceList(null, ERROR_EMPTY);
             }
             String body = response.body().string();
             if (!response.isSuccessful()) {
-                return new DeviceList(null, "HTTP " + response.code());
+                return new DeviceList(null, ERROR_HTTP + " " + response.code());
             }
             return parse(body);
         }
+        catch (java.net.UnknownHostException e) {
+            // The usual cause: Tailscale is not running, so the tailnet name does not resolve.
+            return new DeviceList(null, ERROR_UNRESOLVED);
+        }
+        catch (java.net.SocketTimeoutException | java.net.ConnectException e) {
+            return new DeviceList(null, ERROR_TIMEOUT);
+        }
         catch (IOException e) {
-            return new DeviceList(null, e.getClass().getSimpleName());
+            return new DeviceList(null, ERROR_TIMEOUT);
         }
         catch (JSONException e) {
-            return new DeviceList(null, "bad json");
+            return new DeviceList(null, ERROR_BAD_JSON);
         }
     }
 
@@ -193,7 +210,7 @@ public final class ZfwDeviceApi {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         String baseUrl = trim(prefs.getString(PREF_API_URL, DEFAULT_API_URL));
         if (baseUrl.isEmpty()) {
-            baseUrl = DEFAULT_API_URL;
+            return "";
         }
         try {
             java.net.URI uri = java.net.URI.create(baseUrl);

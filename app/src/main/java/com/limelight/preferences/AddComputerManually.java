@@ -347,8 +347,7 @@ public class AddComputerManually extends Activity {
                     public void run() {
                         if (!list.isSuccess()) {
                             Toast.makeText(AddComputerManually.this,
-                                    getString(R.string.zfw_lookup_failed, list.error),
-                                    Toast.LENGTH_LONG).show();
+                                    describeZfwError(list.error), Toast.LENGTH_LONG).show();
                             return;
                         }
                         if (list.devices.isEmpty()) {
@@ -361,6 +360,26 @@ public class AddComputerManually extends Activity {
                 });
             }
         }, "zfw-devices").start();
+    }
+
+    /** Turns the lookup's error code into something the user can act on. */
+    private String describeZfwError(String code) {
+        if (ZfwDeviceApi.ERROR_NO_URL.equals(code)) {
+            return getString(R.string.zfw_err_no_url);
+        }
+        if (ZfwDeviceApi.ERROR_NO_TOKEN.equals(code)) {
+            return getString(R.string.zfw_err_no_token);
+        }
+        if (ZfwDeviceApi.ERROR_UNRESOLVED.equals(code)) {
+            return getString(R.string.zfw_err_unresolved);
+        }
+        if (ZfwDeviceApi.ERROR_TIMEOUT.equals(code)) {
+            return getString(R.string.zfw_err_timeout);
+        }
+        if (ZfwDeviceApi.ERROR_BAD_JSON.equals(code)) {
+            return getString(R.string.zfw_err_bad_json);
+        }
+        return getString(R.string.zfw_err_http, code == null ? "?" : code);
     }
 
     private void showDeviceDialog(final java.util.List<ZfwDeviceApi.Device> devices) {

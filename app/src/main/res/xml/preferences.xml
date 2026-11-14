@@ -212,13 +212,11 @@
             android:title="@string/title_zfw_api_url"
             android:summary="@string/summary_zfw_api_url"
             android:dialogMessage="@string/summary_zfw_api_url"
-            android:defaultValue="http://100.123.136.82:8791" />
-        <EditTextPreference
+            android:defaultValue="" />
+        <com.limelight.preferences.SecretPreference
             android:key="text_zfw_api_token"
             android:title="@string/title_zfw_api_token"
-            android:summary="@string/summary_zfw_api_token"
-            android:dialogMessage="@string/summary_zfw_api_token"
-            android:defaultValue="" />
+            android:dialogMessage="@string/summary_zfw_api_token" />
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/category_ui_settings"
         android:key="category_ui_settings">

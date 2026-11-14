@@ -104,6 +104,16 @@
     <string name="addpc_enter_ip">请输入一个IP地址</string>
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
+    <string name="summary_zfw_api_token">内容在主机上 out/history/.api_token。留空表示不修改。</string>
+
+    <string name="summary_secret_set">已设置 · 点按可替换</string>
+    <string name="summary_secret_unset">未设置</string>
+    <string name="zfw_err_no_url">先填设备服务地址</string>
+    <string name="zfw_err_no_token">先填访问令牌</string>
+    <string name="zfw_err_unresolved">解析不到地址——Tailscale 开着吗？</string>
+    <string name="zfw_err_timeout">连不上设备服务——检查 Tailscale 和网络</string>
+    <string name="zfw_err_http">服务返回错误：%1$s</string>
+    <string name="zfw_err_bad_json">服务返回的内容无法解析</string>
 
     <string name="zfw_pick_host">选择校园网主机</string>
     <string name="zfw_device_row">%1$s  %2$s  ·  %3$s</string>
@@ -115,13 +125,11 @@
     <string name="title_zfw_api_url">设备服务地址</string>
     <string name="summary_zfw_api_url">跑设备服务的地址，例如 http://mac-mini-2024:8791</string>
     <string name="title_zfw_api_token">访问令牌</string>
-    <string name="summary_zfw_api_token">主机上 out/history/.api_token 的内容</string>
     <string name="title_zfw_host_name">主机设备名</string>
     <string name="summary_zfw_host_name">列表里哪台设备是你要串流的主机</string>
     <string name="zfw_lookup_button">选择校园网主机</string>
     <string name="zfw_lookup_running">正在查询…</string>
     <string name="zfw_lookup_ok">%1$s → %2$s</string>
-    <string name="zfw_lookup_failed">查询失败：%1$s</string>
     <string name="hdr_test_wait_headroom">系统正在压缩 · 等比值回到 %1$s 再测</string>
     <string name="hdr_test_implied_white">按当前比值推算，SDR 白点 ≈ %1$d nit</string>
 
