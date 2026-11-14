@@ -163,6 +163,11 @@ public class Game extends Activity implements SurfaceHolder.Callback,
     private TextView performanceOverlayView;
     private View toolboxLayer;
     private boolean stopIssued;
+    private String sessionHost;
+    private int sessionPort;
+    private int sessionHttpsPort;
+    private String sessionUniqueId;
+    private java.security.cert.X509Certificate sessionCert;
     private TextView toolboxPerfButton;
     private PerfHudView perfHudView;
     private int perfOverlayMode = PreferenceConfiguration.PERF_OVERLAY_OFF;
@@ -355,6 +360,12 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         } catch (CertificateException e) {
             e.printStackTrace();
         }
+
+        sessionHost = host;
+        sessionPort = port;
+        sessionHttpsPort = httpsPort;
+        sessionUniqueId = uniqueId;
+        sessionCert = serverCert;
 
         if (appId == StreamConfiguration.INVALID_APP_ID) {
             finish();
@@ -2416,6 +2427,15 @@ public class Game extends Activity implements SurfaceHolder.Callback,
      * has to be dismissed a second time. The exit therefore issues the stop itself and closes the
      * activity when it returns - bounded, so a dead network cannot trap the user here.
      */
+    /**
+     * Disconnects and quits the running app on the host, then leaves.
+     *
+     * `conn.stop()` only ends the stream. The host keeps the app it started for the session
+     * running, which is what shows up afterwards as a session that is still there and needs a
+     * second "quit app" from the host list to clear. Quitting the app is a separate HTTPS request
+     * (NvHTTP.quitApp), so it is sent from a background thread after the stream is down - the same
+     * shape the reference client uses.
+     */
     private void exitStream() {
         if (conn == null) {
             finish();
@@ -2439,6 +2459,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                 catch (InterruptedException ignored) {
                     Thread.currentThread().interrupt();
                 }
+                quitHostApp();
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -2448,7 +2469,26 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                     }
                 });
             }
-        }, "exit-stream-wait").start();
+        }, "exit-stream-quit").start();
+    }
+
+    /** Asks the host to stop the app this session launched. Failure here is not user-facing. */
+    private void quitHostApp() {
+        if (sessionHost == null) {
+            return;
+        }
+        try {
+            com.limelight.nvstream.http.NvHTTP http = new com.limelight.nvstream.http.NvHTTP(
+                    new ComputerDetails.AddressTuple(sessionHost, sessionPort),
+                    sessionHttpsPort, sessionUniqueId, sessionCert,
+                    PlatformBinding.getCryptoProvider(this));
+            if (!http.quitApp()) {
+                LimeLog.info("quitApp returned false");
+            }
+        }
+        catch (Exception e) {
+            LimeLog.info("quitApp failed: " + e);
+        }
     }
 
     private void toggleToolbox() {
