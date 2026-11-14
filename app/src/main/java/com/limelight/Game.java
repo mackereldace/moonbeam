@@ -2349,7 +2349,10 @@ public class Game extends Activity implements SurfaceHolder.Callback,
 
         findViewById(R.id.toolboxExit).setOnClickListener(v -> {
             hideToolbox();
-            exitStreamCompletely();
+            // Same shape as the upstream client: leave the activity and let onStop() tear the
+            // session down. Waiting here instead turned a network stall into a spinner that
+            // never finished, which is worse than the pause it was meant to avoid.
+            finish();
         });
 
         toolboxPerfButton.setOnClickListener(v -> {
@@ -2368,52 +2371,6 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         // Anywhere outside the panel closes it, and that touch must not reach the host either.
         toolboxLayer.setOnClickListener(v -> hideToolbox());
         findViewById(R.id.toolboxPanel).setOnClickListener(v -> { });
-    }
-
-    /**
-     * Ends the session for real before leaving.
-     *
-     * The normal teardown fires conn.stop() on a background thread and closes the activity right
-     * away, so the process can go to background before the host is told anything - which leaves a
-     * paused session on the host that has to be dismissed from the client again. Waiting for the
-     * stop to finish costs a moment and leaves nothing behind.
-     */
-    private void exitStreamCompletely() {
-        if (conn == null) {
-            finish();
-            return;
-        }
-        connected = false;
-        connecting = false;
-        if (controllerHandler != null) {
-            controllerHandler.stop();
-        }
-        UiHelper.notifyStreamEnded(this);
-
-        final SpinnerDialog dialog = SpinnerDialog.displayDialog(this,
-                getString(R.string.conn_establishing_title), getString(R.string.toolbox_exiting), true);
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    conn.stop();
-                }
-                catch (RuntimeException ignored) {
-                }
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (dialog != null) {
-                            dialog.dismiss();
-                        }
-                        if (!isFinishing()) {
-                            finish();
-                        }
-                    }
-                });
-            }
-        }, "exit-stream").start();
     }
 
     private void toggleToolbox() {

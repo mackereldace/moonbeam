@@ -104,7 +104,6 @@
     <string name="addpc_enter_ip">请输入一个IP地址</string>
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
-    <string name="toolbox_exiting">正在结束会话…</string>
 
     <string name="toolbox_exit">退出串流</string>
     <string name="toolbox_perf">性能浮层：关</string>

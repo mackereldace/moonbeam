@@ -70,9 +70,10 @@ android {
         //        串流中分辨率变化时跟随更新画面长宽比（点击错位）
         // 0.9.0  串流中返回手势唤起工具箱（退出串流 / 指针 / 性能浮层 / 键盘），点击别处关闭
         // 0.9.1  工具箱：删除自绘指针（改用主机真实光标）、性能浮层切到 PerfHud、退出串流等会话真正结束再关闭
+        // 0.9.2  退出串流改回上游做法：只 finish()，会话在 onStop 里结束（等待式会卡在转圈上）
         // 1.0.0  首个正式版
-        versionName "0.9.1"
-        versionCode = 901
+        versionName "0.9.2"
+        versionCode = 902
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'
