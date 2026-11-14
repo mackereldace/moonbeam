@@ -145,6 +145,13 @@
 
     <!-- Preferences -->
 
+    <string name="toolbox_exit">Exit stream</string>
+    <string name="toolbox_cursor">Pointer: off</string>
+    <string name="toolbox_cursor_on">Pointer: on</string>
+    <string name="toolbox_perf">Performance: off</string>
+    <string name="toolbox_perf_on">Performance: on</string>
+    <string name="toolbox_keyboard">Keyboard</string>
+
     <string name="zfw_add_selected">Add</string>
     <string name="zfw_none_selected">Nothing selected</string>
     <string name="summary_secret_keep">Set · leave empty to keep</string>

@@ -105,6 +105,13 @@
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
 
+    <string name="toolbox_exit">退出串流</string>
+    <string name="toolbox_cursor">指针：关</string>
+    <string name="toolbox_cursor_on">指针：开</string>
+    <string name="toolbox_perf">性能浮层：关</string>
+    <string name="toolbox_perf_on">性能浮层：开</string>
+    <string name="toolbox_keyboard">键盘</string>
+
     <string name="zfw_add_selected">添加</string>
     <string name="zfw_none_selected">没有勾选</string>
     <string name="summary_secret_keep">已设置 · 留空保持不变</string>

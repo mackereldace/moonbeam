@@ -161,6 +161,11 @@ public class Game extends Activity implements SurfaceHolder.Callback,
     private TextView notificationOverlayView;
     private int requestedNotificationOverlayVisibility = View.GONE;
     private TextView performanceOverlayView;
+    private View toolboxLayer;
+    private com.limelight.ui.CursorOverlayView cursorOverlay;
+    private TextView toolboxCursorButton;
+    private TextView toolboxPerfButton;
+    private boolean cursorEnabled;
     private PerfHudView perfHudView;
     private int perfOverlayMode = PreferenceConfiguration.PERF_OVERLAY_OFF;
     /** Adaptive bitrate controller for this session, or null when disabled. */
@@ -231,6 +236,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
 
         // Inflate the content
         setContentView(R.layout.activity_game);
+        setupToolbox();
 
         // Start the spinner
         spinner = SpinnerDialog.displayDialog(this, getResources().getString(R.string.conn_establishing_title),
@@ -1893,6 +1899,10 @@ public class Game extends Activity implements SurfaceHolder.Callback,
     // Returns true if the event was consumed
     // NB: View is only present if called from a view callback
     private boolean handleMotionEvent(View view, MotionEvent event) {
+        // The pointer follows the input the client is sending; there is no host cursor to mirror.
+        if (cursorEnabled && cursorOverlay != null) {
+            cursorOverlay.setPosition(event.getX(), event.getY());
+        }
         // Pass through mouse/touch/joystick input if we're not grabbing
         if (!grabbedInput) {
             return false;
@@ -2333,6 +2343,74 @@ public class Game extends Activity implements SurfaceHolder.Callback,
 
     @Override
     public void stageComplete(String stage) {
+    }
+
+    /**
+     * The toolbox is opened with the system back gesture and closed the same way, by tapping
+     * outside it, or by choosing something inside it. Back is otherwise unused while streaming,
+     * so it costs nothing and needs no on-screen handle over the picture.
+     */
+    private void setupToolbox() {
+        toolboxLayer = findViewById(R.id.toolboxLayer);
+        cursorOverlay = findViewById(R.id.cursorOverlay);
+        toolboxCursorButton = findViewById(R.id.toolboxCursor);
+        toolboxPerfButton = findViewById(R.id.toolboxPerf);
+
+        findViewById(R.id.toolboxExit).setOnClickListener(v -> {
+            hideToolbox();
+            stopConnection();
+            finish();
+        });
+
+        toolboxCursorButton.setOnClickListener(v -> {
+            cursorEnabled = !cursorEnabled;
+            cursorOverlay.setVisibility(cursorEnabled ? View.VISIBLE : View.GONE);
+            toolboxCursorButton.setText(cursorEnabled
+                    ? R.string.toolbox_cursor_on : R.string.toolbox_cursor);
+        });
+
+        toolboxPerfButton.setOnClickListener(v -> {
+            boolean showing = performanceOverlayView.getVisibility() == View.VISIBLE;
+            performanceOverlayView.setVisibility(showing ? View.GONE : View.VISIBLE);
+            toolboxPerfButton.setText(showing
+                    ? R.string.toolbox_perf : R.string.toolbox_perf_on);
+        });
+
+        findViewById(R.id.toolboxKeyboard).setOnClickListener(v -> {
+            hideToolbox();
+            toggleKeyboard();
+        });
+
+        // Anywhere outside the panel closes it, and that touch must not reach the host either.
+        toolboxLayer.setOnClickListener(v -> hideToolbox());
+        findViewById(R.id.toolboxPanel).setOnClickListener(v -> { });
+    }
+
+    private void toggleToolbox() {
+        if (toolboxLayer.getVisibility() == View.VISIBLE) {
+            hideToolbox();
+        }
+        else {
+            toolboxLayer.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void hideToolbox() {
+        toolboxLayer.setVisibility(View.GONE);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (toolboxLayer != null && toolboxLayer.getVisibility() == View.VISIBLE) {
+            hideToolbox();
+            return;
+        }
+        // Back has no other meaning mid-stream; opening the toolbox is the useful thing it can do.
+        if (toolboxLayer != null) {
+            toggleToolbox();
+            return;
+        }
+        super.onBackPressed();
     }
 
     private void stopConnection() {
