@@ -144,22 +144,23 @@
     <string name="addpc_wrong_sitelocal">That address doesn\'t look right. You must use your router\'s public IP address for streaming over the Internet.</string>
 
     <!-- Preferences -->
+
+    <string name="zfw_add_selected">Add</string>
+    <string name="zfw_none_selected">Nothing selected</string>
+    <string name="summary_secret_keep">Set · leave empty to keep</string>
     <string name="summary_zfw_api_token">Read from out/history/.api_token on the host. Leave empty to keep the current one.</string>
 
     <string name="summary_secret_set">Set · tap to replace</string>
     <string name="summary_secret_unset">Not set</string>
     <string name="zfw_err_no_url">Set the service address first</string>
-    <string name="zfw_err_no_token">Set the access token first</string>
-    <string name="zfw_err_unresolved">Address not found — is Tailscale running?</string>
-    <string name="zfw_err_timeout">Cannot reach the service — check Tailscale and your network</string>
+    <string name="zfw_err_no_token">Set the token first</string>
+    <string name="zfw_err_unresolved">Tailscale not connected</string>
+    <string name="zfw_err_timeout">Cannot reach the service</string>
     <string name="zfw_err_http">The service answered with an error: %1$s</string>
-    <string name="zfw_err_bad_json">The service sent something unexpected</string>
+    <string name="zfw_err_bad_json">Unexpected response</string>
 
     <string name="zfw_pick_host">Pick a host</string>
-    <string name="zfw_device_row">%1$s  %2$s  ·  %3$s</string>
-    <string name="zfw_online">online</string>
-    <string name="zfw_offline">offline</string>
-    <string name="zfw_no_devices">The service reports no devices</string>
+    <string name="zfw_no_devices">No computers online</string>
 
     <string name="category_zfw_settings">Campus network address</string>
     <string name="title_zfw_api_url">Device service URL</string>

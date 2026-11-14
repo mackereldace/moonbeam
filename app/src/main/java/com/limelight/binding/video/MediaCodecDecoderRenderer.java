@@ -75,6 +75,7 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
     private String glRenderer;
     private boolean foreground = true;
     private PerfOverlayListener perfListener;
+    private ResolutionListener resolutionListener;
 
     /** Real frame intervals measured on the render thread; source of every HUD number. */
     private final FrameIntervalTracker frameTracker = new FrameIntervalTracker();
@@ -101,6 +102,8 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
 
     private MediaFormat inputFormat;
     private MediaFormat outputFormat;
+    /** Format the decoder was configured with; the fallback until the first output format. */
+    private MediaFormat lastConfiguredFormat;
     private MediaFormat configuredFormat;
 
     private boolean needsBaselineSpsHack;
@@ -279,6 +282,34 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
         this.renderTarget = renderTarget;
     }
 
+    public void setResolutionListener(ResolutionListener listener) {
+        this.resolutionListener = listener;
+        notifyResolution();
+    }
+
+    /** Reports the size the decoder is producing, so the view can stop assuming the old one. */
+    private void notifyResolution() {
+        MediaFormat format = outputFormat;
+        if (format == null) {
+            format = lastConfiguredFormat;
+        }
+        if (format == null || resolutionListener == null) {
+            return;
+        }
+        int width;
+        int height;
+        try {
+            width = format.getInteger(MediaFormat.KEY_WIDTH);
+            height = format.getInteger(MediaFormat.KEY_HEIGHT);
+        }
+        catch (RuntimeException e) {
+            return;
+        }
+        if (width > 0 && height > 0) {
+            resolutionListener.onResolutionChanged(width, height);
+        }
+    }
+
     public MediaCodecDecoderRenderer(Activity activity, PreferenceConfiguration prefs,
                                      CrashListener crashListener, int consecutiveCrashCount,
                                      boolean meteredData, boolean requestedHdr,
@@ -450,6 +481,7 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
 
     private MediaFormat createBaseMediaFormat(String mimeType) {
         MediaFormat videoFormat = MediaFormat.createVideoFormat(mimeType, initialWidth, initialHeight);
+        lastConfiguredFormat = videoFormat;
 
         // Avoid setting KEY_FRAME_RATE on Lollipop and earlier to reduce compatibility risk
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -1100,6 +1132,7 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
                                     LimeLog.info("Output format changed");
                                     outputFormat = videoDecoder.getOutputFormat();
                                     LimeLog.info("New output format: " + outputFormat);
+                                    notifyResolution();
                                     break;
                                 default:
                                     break;

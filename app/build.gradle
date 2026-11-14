@@ -66,9 +66,11 @@ android {
         // 0.8.1  查到的校园 IP 记作 localAddress（优先），Tailscale 地址记作 manualAddress（回退）
         // 0.8.2  去掉“主机设备名”，改为列出校园网设备让用户挑（电脑类排前面）
         // 0.8.3  去掉硬编码的 Tailscale 地址；令牌改为密文保存且不回显；连不上时提示检查 Tailscale
+        // 0.8.4  校园网主机只列在线电脑并支持多选；提示文案缩短；修令牌弹窗误显示“未设置”；
+        //        串流中分辨率变化时跟随更新画面长宽比（点击错位）
         // 1.0.0  首个正式版
-        versionName "0.8.3"
-        versionCode = 803
+        versionName "0.8.4"
+        versionCode = 804
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'

@@ -42,7 +42,20 @@ import android.widget.Toast;
 public class AddComputerManually extends Activity {
     private TextView hostText;
     private ComputerManagerService.ComputerManagerBinder managerBinder;
-    private final LinkedBlockingQueue<String> computersToAdd = new LinkedBlockingQueue<>();
+    /** One host to add: the address the user picked plus the fallback for it. */
+    private static final class HostEntry {
+        final String address;
+        final String fallback;
+
+        HostEntry(String address, String fallback) {
+            this.address = address;
+            this.fallback = fallback;
+        }
+    }
+
+    private final LinkedBlockingQueue<HostEntry> computersToAdd = new LinkedBlockingQueue<>();
+    private final java.util.concurrent.atomic.AtomicInteger pendingAdds =
+            new java.util.concurrent.atomic.AtomicInteger();
     private Thread addThread;
     /** Filled by the campus lookup: the host's stable Tailscale address, used as the fallback. */
     private String fallbackAddress;
@@ -123,7 +136,8 @@ public class AddComputerManually extends Activity {
         return null;
     }
 
-    private void doAddPc(String rawUserInput) throws InterruptedException {
+    private void doAddPc(HostEntry entry) throws InterruptedException {
+        final String rawUserInput = entry.address;
         boolean wrongSiteLocal = false;
         boolean invalidInput = false;
         boolean success;
@@ -149,9 +163,9 @@ public class AddComputerManually extends Activity {
                 // Campus first, Tailscale second: the poller tries local, then manual, so the
                 // native path wins when the phone is on the campus network and the tunnel is
                 // only used when that address is not reachable.
-                if (fallbackAddress != null && !fallbackAddress.equals(host)) {
+                if (entry.fallback != null && !entry.fallback.isEmpty() && !entry.fallback.equals(host)) {
                     details.localAddress = new ComputerDetails.AddressTuple(host, port);
-                    details.manualAddress = new ComputerDetails.AddressTuple(fallbackAddress, port);
+                    details.manualAddress = new ComputerDetails.AddressTuple(entry.fallback, port);
                 }
                 else {
                     details.manualAddress = new ComputerDetails.AddressTuple(host, port);
@@ -209,12 +223,8 @@ public class AddComputerManually extends Activity {
             AddComputerManually.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                Toast.makeText(AddComputerManually.this, getResources().getString(R.string.addpc_success), Toast.LENGTH_LONG).show();
-
-                if (!isFinishing()) {
-                    // Close the activity
-                    AddComputerManually.this.finish();
-                }
+                Toast.makeText(AddComputerManually.this,
+                        getResources().getString(R.string.addpc_success), Toast.LENGTH_LONG).show();
                 }
             });
         }
@@ -227,8 +237,18 @@ public class AddComputerManually extends Activity {
             public void run() {
                 while (!isInterrupted()) {
                     try {
-                        String computer = computersToAdd.take();
-                        doAddPc(computer);
+                        HostEntry entry = computersToAdd.take();
+                        doAddPc(entry);
+                        if (pendingAdds.decrementAndGet() <= 0) {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (!isFinishing()) {
+                                        finish();
+                                    }
+                                }
+                            });
+                        }
                     } catch (InterruptedException e) {
                         return;
                     }
@@ -350,12 +370,19 @@ public class AddComputerManually extends Activity {
                                     describeZfwError(list.error), Toast.LENGTH_LONG).show();
                             return;
                         }
-                        if (list.devices.isEmpty()) {
+                        java.util.List<ZfwDeviceApi.Device> hosts = new java.util.ArrayList<>();
+                        for (ZfwDeviceApi.Device device : list.devices) {
+                            // Only machines that could host a stream and are reachable right now.
+                            if (device.looksLikeComputer && device.online) {
+                                hosts.add(device);
+                            }
+                        }
+                        if (hosts.isEmpty()) {
                             Toast.makeText(AddComputerManually.this,
-                                    R.string.zfw_no_devices, Toast.LENGTH_LONG).show();
+                                    R.string.zfw_no_devices, Toast.LENGTH_SHORT).show();
                             return;
                         }
-                        showDeviceDialog(list.devices);
+                        showDeviceDialog(hosts);
                     }
                 });
             }
@@ -384,23 +411,41 @@ public class AddComputerManually extends Activity {
 
     private void showDeviceDialog(final java.util.List<ZfwDeviceApi.Device> devices) {
         final String[] labels = new String[devices.size()];
+        final boolean[] checked = new boolean[devices.size()];
         for (int i = 0; i < devices.size(); i++) {
             ZfwDeviceApi.Device device = devices.get(i);
-            labels[i] = getString(R.string.zfw_device_row,
-                    device.online ? getString(R.string.zfw_online) : getString(R.string.zfw_offline),
-                    device.name.isEmpty() ? device.ip : device.name,
-                    device.ip);
+            labels[i] = device.name.isEmpty() ? device.ip : device.name + "  ·  " + device.ip;
         }
         new android.app.AlertDialog.Builder(this)
                 .setTitle(R.string.zfw_pick_host)
-                .setItems(labels, new android.content.DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(android.content.DialogInterface dialog, int which) {
-                        ZfwDeviceApi.Device device = devices.get(which);
-                        hostText.setText(device.ip);
-                        fallbackAddress = ZfwDeviceApi.serviceHost(AddComputerManually.this);
-                    }
-                })
+                .setMultiChoiceItems(labels, checked,
+                        new android.content.DialogInterface.OnMultiChoiceClickListener() {
+                            @Override
+                            public void onClick(android.content.DialogInterface dialog, int which,
+                                                boolean isChecked) {
+                                checked[which] = isChecked;
+                            }
+                        })
+                .setPositiveButton(R.string.zfw_add_selected,
+                        new android.content.DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(android.content.DialogInterface dialog, int which) {
+                                String fallback = ZfwDeviceApi.serviceHost(AddComputerManually.this);
+                                int queued = 0;
+                                for (int i = 0; i < devices.size(); i++) {
+                                    if (!checked[i]) {
+                                        continue;
+                                    }
+                                    pendingAdds.incrementAndGet();
+                                    computersToAdd.add(new HostEntry(devices.get(i).ip, fallback));
+                                    queued++;
+                                }
+                                if (queued == 0) {
+                                    Toast.makeText(AddComputerManually.this,
+                                            R.string.zfw_none_selected, Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        })
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
     }
@@ -414,7 +459,8 @@ public class AddComputerManually extends Activity {
             return true;
         }
 
-        computersToAdd.add(hostAddress);
+        pendingAdds.incrementAndGet();
+        computersToAdd.add(new HostEntry(hostAddress, fallbackAddress));
         return false;
     }
 }

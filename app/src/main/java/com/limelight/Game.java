@@ -14,6 +14,7 @@ import com.limelight.binding.input.evdev.EvdevListener;
 import com.limelight.binding.input.touch.TouchContext;
 import com.limelight.binding.input.virtual_controller.VirtualController;
 import com.limelight.binding.video.CrashListener;
+import com.limelight.binding.video.ResolutionListener;
 import com.limelight.binding.video.MediaCodecDecoderRenderer;
 import com.limelight.binding.video.MediaCodecHelper;
 import com.limelight.binding.video.PerfHudData;
@@ -424,6 +425,25 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                 willStreamHdr,
                 glPrefs.glRenderer,
                 this);
+
+        // The host can change resolution mid-session (switching the virtual display's mode does
+        // exactly that). Without following it, the view keeps the old aspect ratio, the picture is
+        // stretched into it, and taps land somewhere other than where they look.
+        decoderRenderer.setResolutionListener(new ResolutionListener() {
+            @Override
+            public void onResolutionChanged(final int width, final int height) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (prefConfig.stretchVideo) {
+                            return;
+                        }
+                        streamView.setDesiredAspectRatio((double) width / (double) height);
+                        streamView.requestLayout();
+                    }
+                });
+            }
+        });
 
         // Don't stream HDR if the decoder can't support it
         if (willStreamHdr && !decoderRenderer.isHevcMain10Hdr10Supported() && !decoderRenderer.isAv1Main10Supported()) {

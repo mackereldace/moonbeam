@@ -104,22 +104,23 @@
     <string name="addpc_enter_ip">请输入一个IP地址</string>
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
+
+    <string name="zfw_add_selected">添加</string>
+    <string name="zfw_none_selected">没有勾选</string>
+    <string name="summary_secret_keep">已设置 · 留空保持不变</string>
     <string name="summary_zfw_api_token">内容在主机上 out/history/.api_token。留空表示不修改。</string>
 
     <string name="summary_secret_set">已设置 · 点按可替换</string>
     <string name="summary_secret_unset">未设置</string>
-    <string name="zfw_err_no_url">先填设备服务地址</string>
-    <string name="zfw_err_no_token">先填访问令牌</string>
-    <string name="zfw_err_unresolved">解析不到地址——Tailscale 开着吗？</string>
-    <string name="zfw_err_timeout">连不上设备服务——检查 Tailscale 和网络</string>
+    <string name="zfw_err_no_url">先填服务地址</string>
+    <string name="zfw_err_no_token">先填令牌</string>
+    <string name="zfw_err_unresolved">Tailscale 未连接</string>
+    <string name="zfw_err_timeout">连不上设备服务</string>
     <string name="zfw_err_http">服务返回错误：%1$s</string>
-    <string name="zfw_err_bad_json">服务返回的内容无法解析</string>
+    <string name="zfw_err_bad_json">返回内容异常</string>
 
     <string name="zfw_pick_host">选择校园网主机</string>
-    <string name="zfw_device_row">%1$s  %2$s  ·  %3$s</string>
-    <string name="zfw_online">在线</string>
-    <string name="zfw_offline">离线</string>
-    <string name="zfw_no_devices">服务没有返回任何设备</string>
+    <string name="zfw_no_devices">没有在线的电脑</string>
 
     <string name="category_zfw_settings">校园网地址</string>
     <string name="title_zfw_api_url">设备服务地址</string>

@@ -38,7 +38,9 @@ public class SecretPreference extends EditTextPreference {
         EditText editText = getEditText();
         if (editText != null) {
             editText.setText("");
-            editText.setHint(getContext().getString(R.string.summary_secret_unset));
+            boolean hasValue = getPersistedString("").trim().length() > 0;
+            editText.setHint(getContext().getString(hasValue
+                    ? R.string.summary_secret_keep : R.string.summary_secret_unset));
             editText.setInputType(InputType.TYPE_CLASS_TEXT
                     | InputType.TYPE_TEXT_VARIATION_PASSWORD);
         }
