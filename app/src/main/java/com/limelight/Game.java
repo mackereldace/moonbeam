@@ -2644,14 +2644,11 @@ public class Game extends Activity implements SurfaceHolder.Callback,
     }
 
     /**
-     * Applies a display mode, then reconnects.
+     * Applies a display mode.
      *
-     * The session's encode size is negotiated once, at connect time, and the host keeps using it
-     * for the life of the session - the mode change moves the display out from under it, so the
-     * stream geometry and the absolute-input mapping stop describing the same rectangle and taps
-     * land off by the difference. Reconnecting renegotiates the size, which is what made "exit and
-     * come back in" the working workaround. Doing it here makes that automatic: the session ends
-     * and starts again with the new geometry, without touching the host's settings.
+     * Nothing is renegotiated and no preference is touched: the stream keeps the size the client
+     * asked for, and the host keeps fitting the desktop into it. What has to follow the display is
+     * the host's own input mapping, which it now re-reads per session.
      */
     private void applyDisplayMode(final int width, final int height) {
         final String host = sessionHost;
@@ -2664,27 +2661,8 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                                 ? getString(R.string.resolution_sent, width, height)
                                 : getString(R.string.resolution_failed, error),
                         Toast.LENGTH_LONG).show();
-                if (error == null) {
-                    reconnectAfterModeChange(width, height);
-                }
             });
         }, "display-mode").start();
-    }
-
-    /** Leaves the session and starts a new one with the same parameters, once the mode settles. */
-    private void reconnectAfterModeChange(final int width, final int height) {
-        // The next session negotiates this size, so the stream geometry and the display agree.
-        com.limelight.preferences.PreferenceConfiguration.setResolutionOverride(this, width, height);
-
-        new android.os.Handler(getMainLooper()).postDelayed(() -> {
-            if (isFinishing()) {
-                return;
-            }
-            Intent relaunch = new Intent(getIntent()).setClass(this, Game.class);
-            relaunch.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
-            startActivity(relaunch);
-            finish();
-        }, 1500);
     }
 
     private void toggleToolbox() {
