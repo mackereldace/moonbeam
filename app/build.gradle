@@ -78,9 +78,10 @@ android {
         // 0.9.7  改完分辨率自动软重连（重新协商会话尺寸），不再需要手动退出重进
         // 0.9.8  曾试图写入客户端分辨率偏好（已回退，因当时主机分辨率并未真正改变）
         // 0.9.9  分辨率对话框改为从主机拉取真实可用模式；失败提示原因且不重连；成功后写偏好并重连
+        // 0.10.0 分辨率选择拆成两级子菜单：先选比例，再选缩放（标注相对屏幕的百分比）
         // 1.0.0  首个正式版
-        versionName "0.9.9"
-        versionCode = 909
+        versionName "0.10.0"
+        versionCode = 1000
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'

@@ -2499,11 +2499,16 @@ public class Game extends Activity implements SurfaceHolder.Callback,
     }
 
     /**
-     * Asks the host what it can actually do, then lets the user pick.
+     * Asks the host what it can actually do, then lets the user pick - first the shape, then the
+     * scale.
      *
      * The list comes from the display itself. Offering a fixed set was how a request for
-     * 1920x1080 "succeeded" against a virtual screen that had no such mode - the change never
-     * happened and nothing said so.
+     * 1920x1080 "succeeded" against a virtual screen that had no such mode.
+     *
+     * Two levels, because the two things being chosen are independent: the aspect ratio decides
+     * what fits the phone screen without bars, and the scale decides how much desktop is on it -
+     * a mode equal to the screen is 1:1, a smaller one enlarges everything, a larger one fits more
+     * at the cost of detail.
      */
     private void showResolutionDialog() {
         if (com.limelight.utils.SunshineClient.token(this).isEmpty()) {
@@ -2521,20 +2526,81 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                     Toast.makeText(Game.this, R.string.resolution_no_modes, Toast.LENGTH_LONG).show();
                     return;
                 }
-                final String[] labels = new String[modes.size()];
-                for (int i = 0; i < modes.size(); i++) {
-                    labels[i] = modes.get(i);
-                }
-                new android.app.AlertDialog.Builder(Game.this)
-                        .setTitle(R.string.resolution_title)
-                        .setItems(labels, (dialog, which) -> {
-                            String[] parts = labels[which].split("x");
-                            applyDisplayMode(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
-                        })
-                        .setNegativeButton(android.R.string.cancel, null)
-                        .show();
+                showAspectMenu(modes);
             });
         }, "display-modes").start();
+    }
+
+    /** Groups the modes by aspect ratio and shows one entry per group. */
+    private void showAspectMenu(final java.util.List<String> modes) {
+        final java.util.LinkedHashMap<String, java.util.List<String>> groups = new java.util.LinkedHashMap<>();
+        for (String mode : modes) {
+            String[] parts = mode.split("x");
+            int w;
+            int h;
+            try {
+                w = Integer.parseInt(parts[0]);
+                h = Integer.parseInt(parts[1]);
+            }
+            catch (RuntimeException e) {
+                continue;
+            }
+            groups.computeIfAbsent(aspectLabel(w, h), k -> new java.util.ArrayList<>()).add(mode);
+        }
+
+        final java.util.List<String> keys = new java.util.ArrayList<>(groups.keySet());
+        String[] labels = new String[keys.size()];
+        for (int i = 0; i < keys.size(); i++) {
+            labels[i] = getString(R.string.resolution_aspect_row, keys.get(i), groups.get(keys.get(i)).size());
+        }
+
+        new android.app.AlertDialog.Builder(this)
+                .setTitle(R.string.resolution_pick_aspect)
+                .setItems(labels, (dialog, which) -> showScaleMenu(keys.get(which), groups.get(keys.get(which))))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    /** Shows the modes of one aspect ratio, sorted by how much they scale the desktop. */
+    private void showScaleMenu(String aspect, final java.util.List<String> modes) {
+        final java.util.List<String> sorted = new java.util.ArrayList<>(modes);
+        sorted.sort((a, b) -> Integer.parseInt(a.split("x")[1]) - Integer.parseInt(b.split("x")[1]));
+
+        final int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        String[] labels = new String[sorted.size()];
+        for (int i = 0; i < sorted.size(); i++) {
+            String[] parts = sorted.get(i).split("x");
+            int w = Integer.parseInt(parts[0]);
+            int h = Integer.parseInt(parts[1]);
+            float scale = (float) w / screenWidth;
+            labels[i] = getString(R.string.resolution_mode_row, w, h, Math.round(scale * 100));
+        }
+
+        new android.app.AlertDialog.Builder(this)
+                .setTitle(getString(R.string.resolution_pick_scale, aspect))
+                .setItems(labels, (dialog, which) -> {
+                    String[] parts = sorted.get(which).split("x");
+                    applyDisplayMode(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    /** Nearest common aspect ratio, so 1524x1016 and 3048x2032 land in the same group. */
+    private static String aspectLabel(int w, int h) {
+        float ratio = (float) w / h;
+        float[][] common = {
+                {16f / 9f, 0}, {16f / 10f, 1}, {3f / 2f, 2}, {4f / 3f, 3},
+                {21f / 9f, 4}, {2608f / 1200f, 5},
+        };
+        String[] names = {"16:9", "16:10", "3:2", "4:3", "21:9", "2.17:1"};
+        int best = 0;
+        for (int i = 1; i < common.length; i++) {
+            if (Math.abs(common[i][0] - ratio) < Math.abs(common[best][0] - ratio)) {
+                best = i;
+            }
+        }
+        return names[best];
     }
 
     /**

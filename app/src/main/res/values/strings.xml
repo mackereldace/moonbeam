@@ -144,6 +144,11 @@
     <string name="addpc_wrong_sitelocal">That address doesn\'t look right. You must use your router\'s public IP address for streaming over the Internet.</string>
 
     <!-- Preferences -->
+
+    <string name="resolution_pick_aspect">Choose aspect ratio</string>
+    <string name="resolution_aspect_row">%1$s · %2$d modes</string>
+    <string name="resolution_pick_scale">%1$s · scale</string>
+    <string name="resolution_mode_row">%1$d × %2$d · %3$d%% of screen</string>
     <string name="resolution_loading">Reading display modes…</string>
     <string name="resolution_no_modes">The host did not report any modes</string>
 

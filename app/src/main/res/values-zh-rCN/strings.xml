@@ -104,6 +104,11 @@
     <string name="addpc_enter_ip">请输入一个IP地址</string>
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
+
+    <string name="resolution_pick_aspect">选择比例</string>
+    <string name="resolution_aspect_row">%1$s · %2$d 个尺寸</string>
+    <string name="resolution_pick_scale">%1$s · 缩放</string>
+    <string name="resolution_mode_row">%1$d × %2$d · 屏幕的 %3$d%%</string>
     <string name="resolution_loading">正在读取主机分辨率…</string>
     <string name="resolution_no_modes">主机没有返回可用分辨率</string>
 
