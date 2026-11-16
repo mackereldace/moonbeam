@@ -39,6 +39,37 @@ public final class SunshineClient {
         return value == null ? "" : value.trim();
     }
 
+    /** Asks the host which resolutions its display actually offers; null when it cannot say. */
+    public static java.util.List<String> listDisplayModes(Context context, String host) {
+        String token = token(context);
+        if (token.isEmpty() || host == null || host.isEmpty()) {
+            return null;
+        }
+        String url = "https://" + host + ":" + WEB_PORT + "/api/display-modes?token=" + token;
+        try {
+            OkHttpClient client = trustAllClient();
+            Request request = new Request.Builder().url(url).get().build();
+            try (Response response = client.newCall(request).execute()) {
+                if (!response.isSuccessful() || response.body() == null) {
+                    return null;
+                }
+                org.json.JSONArray array = new org.json.JSONObject(response.body().string())
+                        .optJSONArray("modes");
+                if (array == null) {
+                    return null;
+                }
+                java.util.List<String> modes = new java.util.ArrayList<>();
+                for (int i = 0; i < array.length(); i++) {
+                    modes.add(array.optString(i));
+                }
+                return modes;
+            }
+        }
+        catch (Exception e) {
+            return null;
+        }
+    }
+
     /** Requests a display mode change; returns null on success or a message describing failure. */
     public static String requestDisplayMode(Context context, String host, int width, int height) {
         String token = token(context);

@@ -250,6 +250,18 @@ public class PreferenceConfiguration {
         }
     }
 
+    /**
+     * Stores a custom stream resolution for the next session.
+     *
+     * Called when the host's display mode is changed from the stream: the session size is what the
+     * client asks for at connect time, so without this the next session negotiates the old size
+     * again and the picture goes back to fitting a display that no longer has that shape.
+     */
+    public static void setResolutionOverride(Context context, int width, int height) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        prefs.edit().putString(RESOLUTION_PREF_STRING, width + "x" + height).apply();
+    }
+
     private static int getWidthFromResolutionString(String resString) {
         return Integer.parseInt(resString.split("x")[0]);
     }

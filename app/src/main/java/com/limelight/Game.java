@@ -2498,71 +2498,43 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         }
     }
 
-    /** Two numbers and a few presets: the host applies it through displayplacer. */
+    /**
+     * Asks the host what it can actually do, then lets the user pick.
+     *
+     * The list comes from the display itself. Offering a fixed set was how a request for
+     * 1920x1080 "succeeded" against a virtual screen that had no such mode - the change never
+     * happened and nothing said so.
+     */
     private void showResolutionDialog() {
         if (com.limelight.utils.SunshineClient.token(this).isEmpty()) {
             Toast.makeText(this, R.string.resolution_no_token, Toast.LENGTH_LONG).show();
             return;
         }
 
-        final android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
-        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
-        int pad = (int) (16 * getResources().getDisplayMetrics().density);
-        layout.setPadding(pad, pad, pad, pad);
-
-        final android.widget.EditText widthField = new android.widget.EditText(this);
-        widthField.setHint("width");
-        widthField.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-        widthField.setText(String.valueOf(prefConfig.width));
-        layout.addView(widthField);
-
-        final android.widget.EditText heightField = new android.widget.EditText(this);
-        heightField.setHint("height");
-        heightField.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-        heightField.setText(String.valueOf(prefConfig.height));
-        layout.addView(heightField);
-
-        // Presets are just shortcuts into the same two fields, so the user can see and edit them.
-        final int[][] presets = { {1565, 720}, {1524, 1016}, {3048, 2032}, {1920, 1080} };
-        final android.widget.LinearLayout presetRow = new android.widget.LinearLayout(this);
-        presetRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-        for (int[] preset : presets) {
-            android.widget.TextView chip = new android.widget.TextView(this);
-            chip.setText(preset[0] + "×" + preset[1]);
-            chip.setTextSize(12);
-            chip.setPadding(pad / 2, pad / 3, pad / 2, pad / 3);
-            int margin = pad / 4;
-            android.widget.LinearLayout.LayoutParams lp =
-                    new android.widget.LinearLayout.LayoutParams(
-                            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
-                            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-            lp.setMargins(margin, 0, margin, 0);
-            chip.setLayoutParams(lp);
-            chip.setOnClickListener(v -> {
-                widthField.setText(String.valueOf(preset[0]));
-                heightField.setText(String.valueOf(preset[1]));
+        final String host = sessionHost;
+        Toast.makeText(this, R.string.resolution_loading, Toast.LENGTH_SHORT).show();
+        new Thread(() -> {
+            final java.util.List<String> modes =
+                    com.limelight.utils.SunshineClient.listDisplayModes(Game.this, host);
+            runOnUiThread(() -> {
+                if (modes == null || modes.isEmpty()) {
+                    Toast.makeText(Game.this, R.string.resolution_no_modes, Toast.LENGTH_LONG).show();
+                    return;
+                }
+                final String[] labels = new String[modes.size()];
+                for (int i = 0; i < modes.size(); i++) {
+                    labels[i] = modes.get(i);
+                }
+                new android.app.AlertDialog.Builder(Game.this)
+                        .setTitle(R.string.resolution_title)
+                        .setItems(labels, (dialog, which) -> {
+                            String[] parts = labels[which].split("x");
+                            applyDisplayMode(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+                        })
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .show();
             });
-            presetRow.addView(chip);
-        }
-        layout.addView(presetRow);
-
-        new android.app.AlertDialog.Builder(this)
-                .setTitle(R.string.resolution_title)
-                .setView(layout)
-                .setPositiveButton(R.string.resolution_apply, (dialog, which) -> {
-                    int w;
-                    int h;
-                    try {
-                        w = Integer.parseInt(widthField.getText().toString().trim());
-                        h = Integer.parseInt(heightField.getText().toString().trim());
-                    }
-                    catch (NumberFormatException e) {
-                        return;
-                    }
-                    applyDisplayMode(w, h);
-                })
-                .setNegativeButton(android.R.string.cancel, null)
-                .show();
+        }, "display-modes").start();
     }
 
     /**
@@ -2587,14 +2559,17 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                                 : getString(R.string.resolution_failed, error),
                         Toast.LENGTH_LONG).show();
                 if (error == null) {
-                    reconnectAfterModeChange();
+                    reconnectAfterModeChange(width, height);
                 }
             });
         }, "display-mode").start();
     }
 
     /** Leaves the session and starts a new one with the same parameters, once the mode settles. */
-    private void reconnectAfterModeChange() {
+    private void reconnectAfterModeChange(final int width, final int height) {
+        // The next session negotiates this size, so the stream geometry and the display agree.
+        com.limelight.preferences.PreferenceConfiguration.setResolutionOverride(this, width, height);
+
         new android.os.Handler(getMainLooper()).postDelayed(() -> {
             if (isFinishing()) {
                 return;
