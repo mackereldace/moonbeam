@@ -2565,17 +2565,45 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                 .show();
     }
 
+    /**
+     * Applies a display mode, then reconnects.
+     *
+     * The session's encode size is negotiated once, at connect time, and the host keeps using it
+     * for the life of the session - the mode change moves the display out from under it, so the
+     * stream geometry and the absolute-input mapping stop describing the same rectangle and taps
+     * land off by the difference. Reconnecting renegotiates the size, which is what made "exit and
+     * come back in" the working workaround. Doing it here makes that automatic: the session ends
+     * and starts again with the new geometry, without touching the host's settings.
+     */
     private void applyDisplayMode(final int width, final int height) {
         final String host = sessionHost;
         new Thread(() -> {
             final String error = com.limelight.utils.SunshineClient.requestDisplayMode(
                     Game.this, host, width, height);
-            runOnUiThread(() -> Toast.makeText(Game.this,
-                    error == null
-                            ? getString(R.string.resolution_sent, width, height)
-                            : getString(R.string.resolution_failed, error),
-                    Toast.LENGTH_LONG).show());
+            runOnUiThread(() -> {
+                Toast.makeText(Game.this,
+                        error == null
+                                ? getString(R.string.resolution_sent, width, height)
+                                : getString(R.string.resolution_failed, error),
+                        Toast.LENGTH_LONG).show();
+                if (error == null) {
+                    reconnectAfterModeChange();
+                }
+            });
         }, "display-mode").start();
+    }
+
+    /** Leaves the session and starts a new one with the same parameters, once the mode settles. */
+    private void reconnectAfterModeChange() {
+        new android.os.Handler(getMainLooper()).postDelayed(() -> {
+            if (isFinishing()) {
+                return;
+            }
+            Intent relaunch = new Intent(getIntent()).setClass(this, Game.class);
+            relaunch.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+            startActivity(relaunch);
+            finish();
+        }, 1500);
     }
 
     private void toggleToolbox() {

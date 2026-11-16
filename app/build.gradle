@@ -75,9 +75,10 @@ android {
         // 0.9.4  退出串流：不再依赖 connecting/connected 标志，必定发出一次 stop，最多等 2.5 秒再关闭
         // 0.9.5  退出串流补上 quitApp（V+ 的 doStopAndQuit）：停流之后还要让主机退出该应用
         // 0.9.6  工具箱可改主机分辨率：两格输入 + 预设，主机侧走 display-mode 接口调 displayplacer
+        // 0.9.7  改完分辨率自动软重连（重新协商会话尺寸），不再需要手动退出重进
         // 1.0.0  首个正式版
-        versionName "0.9.6"
-        versionCode = 906
+        versionName "0.9.7"
+        versionCode = 907
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'
