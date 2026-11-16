@@ -145,6 +145,9 @@
 
     <!-- Preferences -->
 
+    <string name="resolution_mode_native">%1$d × %2$d · 1:1</string>
+    <string name="resolution_mode_upscale">%1$d × %2$d · upscaled %3$s×</string>
+
     <string name="resolution_pick_aspect">Choose aspect ratio</string>
     <string name="resolution_aspect_row">%1$s · %2$d modes</string>
     <string name="resolution_pick_scale">%1$s · scale</string>

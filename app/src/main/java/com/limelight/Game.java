@@ -2522,13 +2522,48 @@ public class Game extends Activity implements SurfaceHolder.Callback,
             final java.util.List<String> modes =
                     com.limelight.utils.SunshineClient.listDisplayModes(Game.this, host);
             runOnUiThread(() -> {
-                if (modes == null || modes.isEmpty()) {
+                java.util.List<String> usable = filterToScreen(modes);
+                if (usable.isEmpty()) {
                     Toast.makeText(Game.this, R.string.resolution_no_modes, Toast.LENGTH_LONG).show();
                     return;
                 }
-                showAspectMenu(modes);
+                showAspectMenu(usable);
             });
         }, "display-modes").start();
+    }
+
+    /**
+     * Drops modes bigger than this screen.
+     *
+     * Anything wider or taller than the phone has to be scaled down to be shown, which costs
+     * detail and gains nothing - the desktop cannot be displayed larger than the panel. Keeping
+     * them only invites picking a mode that looks worse than the one below it.
+     */
+    private java.util.List<String> filterToScreen(java.util.List<String> modes) {
+        int screenW = getResources().getDisplayMetrics().widthPixels;
+        int screenH = getResources().getDisplayMetrics().heightPixels;
+        int screenLong = Math.max(screenW, screenH);
+        int screenShort = Math.min(screenW, screenH);
+
+        java.util.List<String> kept = new java.util.ArrayList<>();
+        for (String mode : modes) {
+            String[] parts = mode.split("x");
+            int w;
+            int h;
+            try {
+                w = Integer.parseInt(parts[0]);
+                h = Integer.parseInt(parts[1]);
+            }
+            catch (RuntimeException e) {
+                continue;
+            }
+            int longEdge = Math.max(w, h);
+            int shortEdge = Math.min(w, h);
+            if (longEdge <= screenLong && shortEdge <= screenShort) {
+                kept.add(mode);
+            }
+        }
+        return kept;
     }
 
     /** Groups the modes by aspect ratio and shows one entry per group. */
@@ -2566,14 +2601,19 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         final java.util.List<String> sorted = new java.util.ArrayList<>(modes);
         sorted.sort((a, b) -> Integer.parseInt(a.split("x")[1]) - Integer.parseInt(b.split("x")[1]));
 
-        final int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        int screenW = getResources().getDisplayMetrics().widthPixels;
+        int screenH = getResources().getDisplayMetrics().heightPixels;
         String[] labels = new String[sorted.size()];
         for (int i = 0; i < sorted.size(); i++) {
             String[] parts = sorted.get(i).split("x");
             int w = Integer.parseInt(parts[0]);
             int h = Integer.parseInt(parts[1]);
-            float scale = (float) w / screenWidth;
-            labels[i] = getString(R.string.resolution_mode_row, w, h, Math.round(scale * 100));
+            // How much each streamed pixel is enlarged to fill the panel: 1:1 means the stream has
+            // exactly as many pixels as the screen, above that it is being upscaled.
+            float factor = Math.min((float) screenW / w, (float) screenH / h);
+            labels[i] = Math.abs(factor - 1f) < 0.01f
+                    ? getString(R.string.resolution_mode_native, w, h)
+                    : getString(R.string.resolution_mode_upscale, w, h, String.format(java.util.Locale.US, "%.2f", factor));
         }
 
         new android.app.AlertDialog.Builder(this)

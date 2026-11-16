@@ -105,6 +105,9 @@
     <string name="addpc_wrong_sitelocal"> 该地址似乎不正确。 您必须使用路由器的公共IP地址通过Internet进行串流。 </string>
     <!-- Preferences -->
 
+    <string name="resolution_mode_native">%1$d × %2$d · 1:1 点对点</string>
+    <string name="resolution_mode_upscale">%1$d × %2$d · 放大 %3$s×</string>
+
     <string name="resolution_pick_aspect">选择比例</string>
     <string name="resolution_aspect_row">%1$s · %2$d 个尺寸</string>
     <string name="resolution_pick_scale">%1$s · 缩放</string>
