@@ -2587,14 +2587,18 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                                 : getString(R.string.resolution_failed, error),
                         Toast.LENGTH_LONG).show();
                 if (error == null) {
-                    reconnectAfterModeChange();
+                    reconnectAfterModeChange(width, height);
                 }
             });
         }, "display-mode").start();
     }
 
     /** Leaves the session and starts a new one with the same parameters, once the mode settles. */
-    private void reconnectAfterModeChange() {
+    private void reconnectAfterModeChange(final int width, final int height) {
+        // The next session asks for the size the display now has, so the negotiated geometry and
+        // the display agree again - that is the whole point of reconnecting.
+        com.limelight.preferences.PreferenceConfiguration.setResolutionOverride(this, width, height);
+
         new android.os.Handler(getMainLooper()).postDelayed(() -> {
             if (isFinishing()) {
                 return;

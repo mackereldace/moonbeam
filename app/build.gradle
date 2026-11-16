@@ -76,9 +76,10 @@ android {
         // 0.9.5  退出串流补上 quitApp（V+ 的 doStopAndQuit）：停流之后还要让主机退出该应用
         // 0.9.6  工具箱可改主机分辨率：两格输入 + 预设，主机侧走 display-mode 接口调 displayplacer
         // 0.9.7  改完分辨率自动软重连（重新协商会话尺寸），不再需要手动退出重进
+        // 0.9.8  改分辨率时同时写入客户端分辨率偏好，重连后协商的就是新尺寸（否则会被改回去）
         // 1.0.0  首个正式版
-        versionName "0.9.7"
-        versionCode = 907
+        versionName "0.9.8"
+        versionCode = 908
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'
