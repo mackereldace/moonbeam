@@ -120,6 +120,10 @@ public final class SessionTelemetry {
                     .put("hz", data.displayRefreshHz)
                     .put("net_ms", data.networkLatencyMs)
                     .put("net_dev", data.hostLatencyMs)
+                    // receivedFps is the discriminator between "the host never produced the frame"
+                    // and "the frame arrived and was dropped here": renderedFps alone cannot tell
+                    // them apart, and every streaming-performance question turns on that split.
+                    .put("recv", round(data.receivedFps, 1))
                     .put("decode_ms", round(data.decodeTimeMs, 2))
                     .put("lost", round(data.packetLossPercent / 100.0, 3)));
         } catch (JSONException ignored) {
@@ -140,7 +144,7 @@ public final class SessionTelemetry {
             String built;
             try {
                 built = new JSONObject()
-                        .put("schema", 1)
+                        .put("schema", 2)  // 2: samples carry recv (frames received per second)
                         .put("started_at", startedAt)
                         .put("duration_s", (System.currentTimeMillis() - startedAt) / 1000.0)
                         .put("meta", meta)
