@@ -84,9 +84,10 @@ android {
         // 0.10.3 遥测增加 recv（每秒收到的帧数），用于区分「主机没产出」与「客户端丢帧」
         // 0.10.4 applySurfaceFrameRate 不再把 surfaceCreated 的刷票降级为 ONLY_IF_SEAMLESS
         // 0.10.5 surface 投票会过期：1Hz 重申 + 窗口级 preferredRefreshRate 兜底
+        // 0.10.6 同分辨率也强制 preferredDisplayModeId；API 35+ 让 View 层级投票（ARR 默认 60Hz）
         // 1.0.0  首个正式版
-        versionName "0.10.5"
-        versionCode = 1005
+        versionName "0.10.6"
+        versionCode = 1006
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'

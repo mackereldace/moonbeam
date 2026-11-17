@@ -1004,15 +1004,21 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                     getWindow().setAttributes(windowLayoutParams);
                 }
                 else {
-                    LimeLog.info("Using setFrameRate() instead of preferredDisplayModeId due to matching resolution");
-
-                    // setFrameRate() alone is only a surface-level vote and this device drops it again
-                    // within seconds. The window-level hint rides along with the window and survives
-                    // longer, so set both; the platform uses whichever it honours.
+                    // Android only performs a refresh-rate change from setFrameRate() when the switch is
+                    // "light"; the platform docs point at preferredDisplayModeId for the cases where the
+                    // change has to happen anyway. Same-resolution 60Hz -> 120Hz is exactly such a case,
+                    // and this device kept dropping back to 60Hz with the surface vote alone. Keep the
+                    // documented exception for TV devices, where forcing the mode has caused 4K60 -> 4K24.
+                    boolean isTv = getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEVISION);
+                    if (!isTv) {
+                        LimeLog.info("Forcing display mode " + bestMode.getModeId() + " for " +
+                                bestMode.getRefreshRate() + "Hz");
+                        windowLayoutParams.preferredDisplayModeId = bestMode.getModeId();
+                    }
                     if (bestMode.getRefreshRate() > 0) {
                         windowLayoutParams.preferredRefreshRate = bestMode.getRefreshRate();
-                        getWindow().setAttributes(windowLayoutParams);
                     }
+                    getWindow().setAttributes(windowLayoutParams);
                 }
             }
             else {
@@ -3038,6 +3044,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         }
 
         desiredSurfaceFrameRate = desiredFrameRate;
+        applyViewFrameRate();
 
         // Tell the OS about our frame rate to allow it to adapt the display refresh rate appropriately
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -3181,6 +3188,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         // the existing telemetry tick is cheap (one binder call) and keeps the request visible.
         if (data.displayRefreshHz < prefConfig.fps) {
             applySurfaceFrameRate();
+            applyViewFrameRate();
         }
         SessionTelemetry.get().record(data);
         if (abrController != null) {
@@ -3205,6 +3213,25 @@ public class Game extends Activity implements SurfaceHolder.Callback,
      * This is the mechanism games use, and unlike polling it is a declaration rather than a
      * correction loop. Called on lifecycle events only (surface created/changed, resume).
      */
+    /**
+     * Vote the app's views up to the stream frame rate.
+     *
+     * Android 15 introduced per-View frame rate voting (adaptive refresh rate) and every View defaults
+     * to "normal", which is 60Hz. The merged result can therefore pull a 120 FPS stream back down even
+     * when the surface asks for 120. A positive number here is a direct vote for that rate.
+     */
+    private void applyViewFrameRate() {
+        if (Build.VERSION.SDK_INT < 35) {
+            return;
+        }
+        try {
+            streamView.setRequestedFrameRate(prefConfig.fps);
+            getWindow().getDecorView().setRequestedFrameRate(prefConfig.fps);
+        } catch (RuntimeException e) {
+            LimeLog.warning("setRequestedFrameRate rejected: " + e.getMessage());
+        }
+    }
+
     private void applySurfaceFrameRate() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || streamView == null) {
             return;
