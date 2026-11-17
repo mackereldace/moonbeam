@@ -1005,6 +1005,14 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                 }
                 else {
                     LimeLog.info("Using setFrameRate() instead of preferredDisplayModeId due to matching resolution");
+
+                    // setFrameRate() alone is only a surface-level vote and this device drops it again
+                    // within seconds. The window-level hint rides along with the window and survives
+                    // longer, so set both; the platform uses whichever it honours.
+                    if (bestMode.getRefreshRate() > 0) {
+                        windowLayoutParams.preferredRefreshRate = bestMode.getRefreshRate();
+                        getWindow().setAttributes(windowLayoutParams);
+                    }
                 }
             }
             else {
@@ -3166,6 +3174,14 @@ public class Game extends Activity implements SurfaceHolder.Callback,
     @Override
     public void onPerfHud(final PerfHudData data) {
         data.displayRefreshHz = Math.round(getWindowManager().getDefaultDisplay().getRefreshRate());
+
+        // The display refresh rate flapped between 60 and 120 for the whole session, even in SDR, with
+        // the surface vote already asking for 120 with CHANGE_FRAME_RATE_ALWAYS: on this device the
+        // vote expires and the compositor falls back to its own choice. Renewing it once a second from
+        // the existing telemetry tick is cheap (one binder call) and keeps the request visible.
+        if (data.displayRefreshHz < prefConfig.fps) {
+            applySurfaceFrameRate();
+        }
         SessionTelemetry.get().record(data);
         if (abrController != null) {
             abrController.onSample(data);
