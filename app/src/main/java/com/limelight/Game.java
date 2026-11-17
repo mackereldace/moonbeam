@@ -138,6 +138,9 @@ public class Game extends Activity implements SurfaceHolder.Callback,
     private boolean connected = false;
     private boolean autoEnterPip = false;
     private boolean surfaceCreated = false;
+    // Frame rate voted to the platform in surfaceCreated(). Kept so applySurfaceFrameRate() can
+    // repeat the same request instead of weakening it -- see the comment there.
+    private float desiredSurfaceFrameRate = -1;
     private boolean attemptedConnection = false;
     private int suppressPipRefCount = 0;
     private String pcName;
@@ -3026,6 +3029,8 @@ public class Game extends Activity implements SurfaceHolder.Callback,
             desiredFrameRate = desiredRefreshRate;
         }
 
+        desiredSurfaceFrameRate = desiredFrameRate;
+
         // Tell the OS about our frame rate to allow it to adapt the display refresh rate appropriately
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             // We want to change frame rate even if it's not seamless, since prepareDisplayForRendering()
@@ -3192,11 +3197,21 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         if (surface == null || !surface.isValid()) {
             return;
         }
+        // Repeat surfaceCreated()'s request verbatim. Using CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS here used
+        // to override the CHANGE_FRAME_RATE_ALWAYS vote that surfaceCreated() had just made, and a
+        // 60Hz -> 120Hz switch is rarely seamless, so a 120 FPS stream could sit on a 60Hz panel for the
+        // whole session. setFrameRate() is a vote: the last call wins.
+        final float frameRate = desiredSurfaceFrameRate > 0 ? desiredSurfaceFrameRate : prefConfig.fps;
         try {
-            surface.setFrameRate(prefConfig.fps,
-                    android.view.Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE,
-                    android.view.Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS);
-            LimeLog.info("Declared surface frame rate " + prefConfig.fps + "fps");
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                surface.setFrameRate(frameRate,
+                        android.view.Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE,
+                        android.view.Surface.CHANGE_FRAME_RATE_ALWAYS);
+            } else {
+                surface.setFrameRate(frameRate,
+                        android.view.Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE);
+            }
+            LimeLog.info("Declared surface frame rate " + frameRate + "fps");
         } catch (IllegalArgumentException e) {
             LimeLog.warning("setFrameRate rejected: " + e.getMessage());
         }

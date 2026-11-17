@@ -82,9 +82,11 @@ android {
         // 0.10.1 过滤掉长边/短边超过本机的模式；指标改为“放大倍数 / 1:1 点对点”
         // 0.10.2 不再改客户端分辨率偏好、不再重连：主机改为按当前显示器几何换算输入
         // 0.10.3 遥测增加 recv（每秒收到的帧数），用于区分「主机没产出」与「客户端丢帧」
+        // 0.10.4 applySurfaceFrameRate 不再把 surfaceCreated 的刷票降级为 ONLY_IF_SEAMLESS，
+        //        120fps 串流不会整场卡在 60Hz 面板上
         // 1.0.0  首个正式版
-        versionName "0.10.3"
-        versionCode = 1003
+        versionName "0.10.4"
+        versionCode = 1004
 
         // Generate native debug symbols to allow Google Play to symbolicate our native crashes
         ndk.debugSymbolLevel = 'FULL'
